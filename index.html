@@ -15,6 +15,8 @@
         .view-section { display: none; }
         .view-section.active { display: block; }
         .tab-btn.active { border-bottom: 2px solid #16a34a; color: #16a34a; font-weight: 600; }
+        /* Animación suave para modales */
+        .modal-content { transition: transform 0.3s ease-out; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden font-sans">
@@ -52,7 +54,7 @@
                 <i data-lucide="package"></i> Inventario
             </a>
             <a href="#" onclick="navigate('reportes')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors text-yellow-300" data-target="reportes">
-                <i data-lucide="pie-chart"></i> Reportes & Finanzas
+                <i data-lucide="pie-chart"></i> Reportes & Proyecciones
             </a>
             <a href="#" onclick="navigate('calendario')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors" data-target="calendario">
                 <i data-lucide="calendar-days"></i> Calendario / Tareas
@@ -113,11 +115,11 @@
             <section id="dashboard" class="view-section active">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
-                        <p class="text-sm text-gray-500 mb-1">Total Animales/Mascotas</p>
+                        <p class="text-sm text-gray-500 mb-1">Total Individuos</p>
                         <h3 id="stat-total" class="text-3xl font-bold text-gray-800">0</h3>
                     </div>
                     <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
-                        <p class="text-sm text-gray-500 mb-1">Lotes Activos</p>
+                        <p class="text-sm text-gray-500 mb-1">Lotes / Zonas</p>
                         <h3 id="stat-lotes" class="text-3xl font-bold text-green-600">0</h3>
                     </div>
                     <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
@@ -155,14 +157,53 @@
 
             <!-- VISTA: REPORTES Y FINANZAS -->
             <section id="reportes" class="view-section">
-                <div class="flex justify-between items-center mb-6">
-                    <p class="text-gray-600">Visión global de gastos de la finca (Animales + Maquinaria).</p>
-                    <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-bold shadow-sm">
-                        Gasto Histórico Total: <span id="rep-gasto-total">$0.00</span>
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                    <p class="text-gray-600">Control global de gastos y proyección de ingresos.</p>
+                    <div class="bg-red-50 text-red-800 px-4 py-3 rounded-lg font-bold shadow-sm border border-red-200">
+                        Inversión Acumulada: <span id="rep-gasto-total">$0.00</span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Panel de Proyecciones -->
+                <div class="bg-white p-6 rounded-xl border border-green-200 shadow-sm mb-6 bg-gradient-to-br from-green-50 to-white">
+                    <h3 class="font-bold text-green-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i> Proyección de Ingresos (Potencial de Venta)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Venta de Carne -->
+                        <div class="bg-white p-4 rounded-lg border shadow-sm">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-semibold text-gray-600">Animales de Engorde (Kg Totales):</span>
+                                <span id="proy-kg-total" class="font-bold text-gray-800">0 Kg</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <label class="text-sm text-gray-600">Precio x Kg/Lb actual ($):</label>
+                                <input type="number" step="0.01" id="precio-carne" value="0.00" onchange="calcularProyecciones()" onkeyup="calcularProyecciones()" class="w-24 px-2 py-1 border rounded focus:ring-green-500">
+                            </div>
+                            <div class="pt-2 border-t text-right">
+                                <span class="text-sm text-gray-500">Valor Estimado en Pie:</span>
+                                <span id="valor-carne-est" class="text-lg font-bold text-green-700 ml-2">$0.00</span>
+                            </div>
+                        </div>
+                        <!-- Venta de Leche -->
+                        <div class="bg-white p-4 rounded-lg border shadow-sm">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-semibold text-gray-600">Producción Leche (Lts Totales):</span>
+                                <span id="proy-lt-total" class="font-bold text-gray-800">0 Lts</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <label class="text-sm text-gray-600">Precio x Litro actual ($):</label>
+                                <input type="number" step="0.01" id="precio-leche" value="0.00" onchange="calcularProyecciones()" onkeyup="calcularProyecciones()" class="w-24 px-2 py-1 border rounded focus:ring-green-500">
+                            </div>
+                            <div class="pt-2 border-t text-right">
+                                <span class="text-sm text-gray-500">Ingreso Generado:</span>
+                                <span id="valor-leche-est" class="text-lg font-bold text-blue-700 ml-2">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                         <h3 class="font-bold text-gray-800 mb-4 text-center">Distribución de Gastos por Categoría</h3>
                         <div class="relative h-64 w-full flex justify-center">
@@ -182,7 +223,7 @@
             <section id="maquinaria" class="view-section">
                 <div class="flex justify-between items-center mb-6">
                     <p class="text-gray-600">Control de tractores, vehículos, y equipos de la finca.</p>
-                    <button onclick="openModal('modal-maquinaria')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
+                    <button onclick="abrirNuevaMaquina()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
                         <i data-lucide="plus" class="w-4 h-4"></i> Registrar Equipo
                     </button>
                 </div>
@@ -206,12 +247,13 @@
                             <div>
                                 <h2 class="text-2xl font-bold text-gray-800" id="det-maq-nombre">Tractor JD</h2>
                                 <p class="text-gray-600 mt-1" id="det-maq-sub">Tractor · John Deere · Placa: 1234</p>
+                                <p class="text-sm text-gray-500 mt-1">Costo de Compra: <span id="det-maq-costo-compra" class="font-semibold text-gray-700">$0.00</span></p>
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-2">
                             <button onclick="openModal('modal-maquinaria', currentMaquinaId)" class="bg-white border shadow-sm text-gray-600 hover:bg-gray-50 py-1 px-3 rounded-lg flex items-center gap-1"><i data-lucide="edit" class="w-4 h-4"></i> Editar</button>
                             <div class="mt-2 text-sm bg-red-50 text-red-800 px-3 py-1 rounded-lg border border-red-100">
-                                Gasto Acumulado: <strong id="det-maq-costo">$0.00</strong>
+                                Inversión Total (Compra + Mant.): <strong id="det-maq-costo">$0.00</strong>
                             </div>
                         </div>
                     </div>
@@ -231,7 +273,7 @@
             <section id="inventario" class="view-section">
                 <div class="flex justify-between items-center mb-6">
                     <p class="text-gray-600">Controla vacunas, alimentos, insumos y repuestos.</p>
-                    <button onclick="openModal('modal-inventario')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
+                    <button onclick="abrirNuevoProducto()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
                         <i data-lucide="plus" class="w-4 h-4"></i> Añadir Producto
                     </button>
                 </div>
@@ -255,11 +297,11 @@
             <section id="lotes" class="view-section">
                 <div class="flex justify-between items-center mb-6">
                     <p class="text-gray-600">Administración de grupos. Aplica acciones masivas a todo un lote o zona.</p>
-                    <button onclick="openModal('modal-lote')" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
+                    <button onclick="abrirNuevoLote()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
                         <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Lote/Zona
                     </button>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="lotes-list">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="lotes-list">
                     <!-- JS -->
                 </div>
             </section>
@@ -273,7 +315,7 @@
                             <input type="text" id="search-animal" placeholder="Buscar por ID, Nombre, Raza..." class="pl-9 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm" onkeyup="renderAnimales()">
                         </div>
                     </div>
-                    <button onclick="openModal('modal-animal')" class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-sm font-medium w-full md:w-auto justify-center">
+                    <button onclick="abrirNuevoAnimal()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-sm font-medium w-full md:w-auto justify-center">
                         <i data-lucide="plus" class="w-4 h-4"></i> Registrar Individuo
                     </button>
                 </div>
@@ -323,6 +365,7 @@
                             <div class="flex gap-2">
                                 <span id="det-estado-badge" class="px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-800 border border-green-200">Lactando</span>
                                 <button onclick="openEditAnimalModal()" class="bg-white border shadow-sm text-gray-600 hover:bg-gray-50 py-1 px-3 rounded-lg flex items-center gap-1"><i data-lucide="edit" class="w-4 h-4"></i> Editar</button>
+                                <button onclick="borrarAnimal(currentAnimalId)" class="bg-red-50 border border-red-100 text-red-600 hover:bg-red-100 py-1 px-3 rounded-lg flex items-center gap-1" title="Eliminar Individuo"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                             <div class="mt-2 text-sm bg-blue-50 text-blue-800 px-3 py-1 rounded-lg border border-blue-100">
                                 Inversión Acumulada: <strong id="det-costo-total">$0.00</strong>
@@ -333,7 +376,7 @@
                     <div class="p-4 border-b bg-gray-50">
                         <div class="flex flex-wrap gap-2">
                             <button onclick="openEventModal('Salud')" class="bg-white border-blue-200 border text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="syringe" class="w-4 h-4"></i> Aplicar Tratamiento/Vacuna</button>
-                            <button onclick="openEventModal('Reproducción')" class="bg-white border-pink-200 border text-pink-700 hover:bg-pink-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="heart" class="w-4 h-4"></i> Registro Reproductivo</button>
+                            <button onclick="openEventModal('Reproducción')" class="bg-white border-pink-200 border text-pink-700 hover:bg-pink-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm" id="btn-reproduccion"><i data-lucide="heart" class="w-4 h-4"></i> Registro Reproductivo</button>
                             <button onclick="openEventModal('Producción')" class="bg-white border-orange-200 border text-orange-700 hover:bg-orange-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="scale" class="w-4 h-4"></i> Pesaje / Control</button>
                         </div>
                     </div>
@@ -357,7 +400,7 @@
                                     <th class="py-3 px-4 font-semibold">Fecha Programada</th>
                                     <th class="py-3 px-4 font-semibold">Sujeto / Vehículo</th>
                                     <th class="py-3 px-4 font-semibold">Tipo de Tarea</th>
-                                    <th class="py-3 px-4 font-semibold">Exportar</th>
+                                    <th class="py-3 px-4 font-semibold text-center">Exportar</th>
                                 </tr>
                             </thead>
                             <tbody id="tareas-list" class="divide-y divide-gray-100"></tbody>
@@ -373,9 +416,9 @@
     
     <!-- Modal Inventario -->
     <div id="modal-inventario" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">Registrar Producto</h3>
+                <h3 class="text-xl font-bold text-gray-800">Registrar Producto</h3>
                 <button onclick="closeModal('modal-inventario')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
             </div>
             <form onsubmit="saveInventario(event)">
@@ -383,13 +426,13 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Nombre del Producto *</label>
-                        <input type="text" id="inv-nombre" required class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. Diésel, Llanta, Vacuna Rabia">
+                        <input type="text" id="inv-nombre" required class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. Diésel, Llanta, Ivermectina 1%">
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Categoría *</label>
                         <select id="inv-categoria" required class="w-full px-3 py-2 border rounded-lg">
                             <option value="Medicina/Vacuna">Medicina / Vacuna</option>
-                            <option value="Vitaminas/Minerales">Vitaminas / Minerales</option>
+                            <option value="Vitaminas/Minerales">Vitaminas / Minerales / Desparasitante</option>
                             <option value="Alimento/Nutrición">Alimento / Nutrición</option>
                             <option value="Combustible/Lubricante">Combustible / Lubricante</option>
                             <option value="Repuestos/Maquinaria">Repuestos / Maquinaria</option>
@@ -398,23 +441,25 @@
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium mb-1">Costo Unitario ($) *</label>
-                            <input type="number" step="0.01" id="inv-costo" required class="w-full px-3 py-2 border rounded-lg" placeholder="0.00">
+                            <label class="block text-sm font-medium mb-1">Costo Total ($) *</label>
+                            <input type="number" step="0.01" id="inv-costo" required class="w-full px-3 py-2 border rounded-lg" placeholder="Costo del envase/unidad">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1">Cantidad Inicial</label>
-                            <input type="number" step="0.01" id="inv-stock" class="w-full px-3 py-2 border rounded-lg" placeholder="0">
+                            <label class="block text-sm font-medium mb-1">Cantidad (Stock)</label>
+                            <input type="number" step="0.01" id="inv-stock" class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. 500">
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Unidad de Medida</label>
                         <select id="inv-unidad" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="ml">ml (Mililitros para frascos)</option>
                             <option value="Dosis">Dosis / Aplicaciones</option>
                             <option value="Galones">Galones / Litros</option>
                             <option value="Kg">Kilogramos (Kg) / Libras</option>
                             <option value="Sacos">Sacos / Quintales</option>
-                            <option value="Unidad">Unidad (Cajas/Llantas)</option>
+                            <option value="Unidad">Unidad (Cajas/Llantas/Pastillas)</option>
                         </select>
+                        <p class="text-xs text-blue-600 mt-2 bg-blue-50 p-2 rounded"><strong>Ejemplo:</strong> Si compras un frasco de 500ml de vitamina, pon Cantidad "500" y Unidad "ml". Al inyectar un animal con "5", se restarán 5ml del stock.</p>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
@@ -427,7 +472,7 @@
 
     <!-- Modal Maquinaria -->
     <div id="modal-maquinaria" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">Registrar Equipo/Vehículo</h3>
                 <button onclick="closeModal('modal-maquinaria')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -465,6 +510,10 @@
                             <input type="number" id="maq-ano" class="w-full px-3 py-2 border rounded-lg">
                         </div>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-green-700">Costo de Compra Inicial ($)</label>
+                        <input type="number" step="0.01" id="maq-costo" class="w-full px-3 py-2 border border-green-300 rounded-lg bg-green-50" placeholder="Ej. 15000.00">
+                    </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" onclick="closeModal('modal-maquinaria')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
@@ -476,7 +525,7 @@
 
     <!-- Modal Mantenimiento Maquinaria -->
     <div id="modal-mantenimiento" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">Bitácora de Vehículo</h3>
                 <button onclick="closeModal('modal-mantenimiento')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -528,7 +577,7 @@
 
     <!-- Modal Lote / Zona -->
     <div id="modal-lote" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">Nuevo Lote o Zona</h3>
                 <button onclick="closeModal('modal-lote')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -548,7 +597,7 @@
 
     <!-- Modal Generación Masiva -->
     <div id="modal-masivo" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-green-700">Creación Masiva</h3>
                 <button onclick="closeModal('modal-masivo')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -591,7 +640,7 @@
 
     <!-- Modal Evento/Tratamiento Masivo -->
     <div id="modal-evento-masivo" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-blue-700">Tratamiento por Lote / Zona</h3>
                 <button onclick="closeModal('modal-evento-masivo')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -628,7 +677,7 @@
 
     <!-- Modal Animal/Mascota Individual -->
     <div id="modal-animal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 max-h-[95vh] overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 max-h-[95vh] overflow-y-auto modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold" id="animal-modal-title">Registrar Individuo</h3>
                 <button onclick="closeModal('modal-animal')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -640,7 +689,7 @@
                     <div><label class="block text-sm font-medium mb-1">Alias (Opcional)</label><input type="text" id="an-nombre" class="w-full px-3 py-2 border rounded-lg"></div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Especie *</label>
-                        <select id="an-especie" required class="w-full px-3 py-2 border rounded-lg">
+                        <select id="an-especie" required class="w-full px-3 py-2 border rounded-lg" onchange="togglePetFields()">
                             <optgroup label="Ganadería">
                                 <option value="Bovino">Bovino</option><option value="Caprino">Caprino</option><option value="Porcino">Porcino</option><option value="Ovino">Ovino</option><option value="Equino">Equino</option>
                             </optgroup>
@@ -652,28 +701,35 @@
                     <div><label class="block text-sm font-medium mb-1">Raza</label><input type="text" id="an-raza" class="w-full px-3 py-2 border rounded-lg"></div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Sexo *</label>
-                        <select id="an-sexo" required class="w-full px-3 py-2 border rounded-lg"><option value="Hembra">Hembra</option><option value="Macho">Macho</option></select>
+                        <select id="an-sexo" required class="w-full px-3 py-2 border rounded-lg"><option value="Hembra">Hembra</option><option value="Macho">Macho</option><option value="Desconocido">Desconocido</option></select>
                     </div>
-                    <div>
+                    
+                    <div id="div-proposito">
                         <label class="block text-sm font-medium mb-1">Propósito</label>
                         <select id="an-proposito" class="w-full px-3 py-2 border rounded-lg"><option value="Leche">Leche</option><option value="Carne">Engorde / Carne</option><option value="Cría">Cría</option><option value="Compañía">Compañía / Guardia</option></select>
                     </div>
+                    
                     <div>
-                        <label class="block text-sm font-medium mb-1">Estado *</label>
+                        <label class="block text-sm font-medium mb-1">Estado Fisiológico *</label>
                         <select id="an-estado" required class="w-full px-3 py-2 border rounded-lg">
                             <option value="Activo">Activo (Mascota/General)</option><option value="Crecimiento">Crecimiento / Cría</option><option value="Engorde">En Engorde</option><option value="Vacía">Vacía</option>
                             <option value="Preñada">Preñada / Gestante</option><option value="Lactando">Lactando</option><option value="Semental">Semental</option>
                         </select>
                     </div>
-                    <div>
+                    
+                    <div id="div-lote">
                         <label class="block text-sm font-medium mb-1">Lote / Zona</label>
                         <select id="an-lote" class="w-full px-3 py-2 border rounded-lg"><option value="">Sin Asignar</option></select>
                     </div>
                     <div><label class="block text-sm font-medium mb-1">Nacimiento (Aprox)</label><input type="date" id="an-fecha-nac" class="w-full px-3 py-2 border rounded-lg"></div>
                     
-                    <div class="md:col-span-3 mt-2 border-t pt-2"><h4 class="text-sm font-bold text-gray-500 mb-2"><i data-lucide="git-merge" class="inline w-4 h-4"></i> Genealogía (Árbol Familiar)</h4></div>
-                    <div><label class="block text-sm font-medium mb-1 text-pink-700">Madre (ID/Nombre)</label><input type="text" id="an-madre" class="w-full px-3 py-2 border border-pink-200 rounded-lg bg-pink-50" placeholder="Opcional"></div>
-                    <div><label class="block text-sm font-medium mb-1 text-blue-700">Padre (ID/Nombre)</label><input type="text" id="an-padre" class="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50" placeholder="Opcional"></div>
+                    <div class="md:col-span-3 mt-2 border-t pt-2" id="div-genealogia">
+                        <h4 class="text-sm font-bold text-gray-500 mb-2"><i data-lucide="git-merge" class="inline w-4 h-4"></i> Genealogía (Árbol Familiar)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-sm font-medium mb-1 text-pink-700">Madre (ID/Nombre)</label><input type="text" id="an-madre" class="w-full px-3 py-2 border border-pink-200 rounded-lg bg-pink-50" placeholder="Opcional"></div>
+                            <div><label class="block text-sm font-medium mb-1 text-blue-700">Padre (ID/Nombre)</label><input type="text" id="an-padre" class="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50" placeholder="Opcional"></div>
+                        </div>
+                    </div>
                     <div><label class="block text-sm font-medium mb-1">Peso Inicial (Kg)</label><input type="number" step="0.01" id="an-peso" class="w-full px-3 py-2 border rounded-lg"></div>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
@@ -686,7 +742,7 @@
 
     <!-- Modal Evento Individual -->
     <div id="modal-evento" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold" id="evento-title">Añadir Registro</h3>
                 <button onclick="closeModal('modal-evento')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -702,9 +758,10 @@
                     <div id="ev-producto-container">
                         <label class="block text-sm font-medium mb-1">Insumo Utilizado</label>
                         <select id="ev-producto" class="w-full px-3 py-2 border rounded-lg bg-blue-50 border-blue-200 text-blue-900"><option value="">-- Ninguno --</option></select>
+                        <p class="text-xs text-blue-600 mt-1">El costo y cantidad se descontarán de la unidad configurada en Inventario.</p>
                     </div>
                     <div id="ev-valor-container" class="hidden">
-                        <label class="block text-sm font-medium mb-1" id="ev-valor-label">Valor/Cantidad</label>
+                        <label class="block text-sm font-medium mb-1" id="ev-valor-label">Valor/Cantidad Aplicada</label>
                         <input type="number" step="0.01" id="ev-valor" class="w-full px-3 py-2 border rounded-lg" value="1">
                     </div>
                     <div><label class="block text-sm font-medium mb-1">Detalles Adicionales</label><textarea id="ev-detalles" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea></div>
@@ -770,7 +827,7 @@
                 'animales': 'Mi Ganado', 'mascotas': 'Mis Mascotas', 'calendario': 'Agenda Operativa', 
                 'animal-detalle': 'Ficha Médica', 'inventario': 'Bodega e Inventario',
                 'maquinaria': 'Parque Vehicular y Equipos', 'maquina-detalle': 'Bitácora de Vehículo',
-                'reportes': 'Finanzas y Rentabilidad'
+                'reportes': 'Finanzas y Proyecciones'
             };
             const vTitle = document.getElementById('view-title');
             if(vTitle) vTitle.innerText = titles[viewId] || 'AgroTrack ERP';
@@ -789,16 +846,46 @@
         }
 
         function openModal(id, itemId = null) { 
+            const form = document.querySelector(`#${id} form`);
+            if(form) {
+                form.reset();
+                // Fundamental para no sobreescribir el ID de la mascota/animal anterior
+                const hiddenId = form.querySelector('input[type="hidden"]');
+                if(hiddenId) hiddenId.value = '';
+            }
+            
             document.getElementById(id).classList.remove('hidden'); 
+            
             if(id === 'modal-maquinaria' && itemId) fillMaquinaEditForm(itemId);
-            if(id === 'modal-animal' && globalSpeciesFilter === 'Mascota') document.getElementById('an-especie').value = 'Perro';
         }
         
         function closeModal(id) { 
             document.getElementById(id).classList.add('hidden');
-            const form = document.querySelector(`#${id} form`);
-            if(form) form.reset();
         }
+
+        // ================= ADAPTACIONES UI MASCOTAS =================
+        function togglePetFields() {
+            const especie = document.getElementById('an-especie').value;
+            const isP = isPet(especie);
+            document.getElementById('div-proposito').style.display = isP ? 'none' : 'block';
+            document.getElementById('div-lote').style.display = isP ? 'none' : 'block';
+            
+            if(isP) {
+                document.getElementById('an-estado').value = 'Activo';
+                document.getElementById('an-proposito').value = 'Compañía';
+                document.getElementById('an-lote').value = '';
+            }
+        }
+        
+        function abrirNuevoAnimal() {
+            openModal('modal-animal');
+            if(globalSpeciesFilter === 'Mascota') document.getElementById('an-especie').value = 'Perro';
+            togglePetFields();
+        }
+
+        function abrirNuevoProducto() { openModal('modal-inventario'); }
+        function abrirNuevaMaquina() { openModal('modal-maquinaria'); }
+        function abrirNuevoLote() { openModal('modal-lote'); }
 
         // ================= DATABASE (INDEXEDDB) VERSION 3 =================
         const DB_NAME = 'GanaderiaOfflineDB';
@@ -843,7 +930,9 @@
             const req = db.transaction([storeName], 'readwrite').objectStore(storeName).delete(id);
             req.onsuccess = () => res(); req.onerror = () => rej(req.error);
         });
-        const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+        
+        // ID generation using crypto if available, robust for mass generation
+        const generateId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
 
         // ================= IMPORT / EXPORT (.agr) =================
         async function exportData() {
@@ -872,8 +961,6 @@
                     
                     if(confirm("ATENCIÓN: Esto reemplazará todos tus datos actuales con los del archivo de respaldo. ¿Estás completamente seguro de continuar?")) {
                         const stores = ['lotes', 'animales', 'eventos', 'inventario', 'maquinaria', 'mantenimientos'];
-                        
-                        // Clear existing
                         for(let s of stores) {
                             if(db.objectStoreNames.contains(s)) {
                                 await new Promise((res, rej) => {
@@ -882,16 +969,11 @@
                                 });
                             }
                         }
-                        
-                        // Insert new
                         for(let s of stores) {
                             if(data[s] && data[s].length > 0) {
-                                for(let item of data[s]) {
-                                    await dbAdd(s, item);
-                                }
+                                for(let item of data[s]) await dbAdd(s, item);
                             }
                         }
-                        
                         alert("Datos restaurados correctamente. La aplicación se recargará.");
                         window.location.reload();
                     }
@@ -903,12 +985,16 @@
             reader.readAsText(file);
         }
 
-
-        // ================= MAQUINARIA Y VEHICULOS (Heredado de ERP) =================
+        // ================= MAQUINARIA Y VEHICULOS =================
         async function saveMaquinaria(e) {
             e.preventDefault();
             const id = document.getElementById('maq-id').value || generateId();
-            await dbAdd('maquinaria', { id: id, nombre: document.getElementById('maq-nombre').value, tipo: document.getElementById('maq-tipo').value, marca: document.getElementById('maq-marca').value, placa: document.getElementById('maq-placa').value, ano: document.getElementById('maq-ano').value });
+            const costo = parseFloat(document.getElementById('maq-costo').value || 0);
+            await dbAdd('maquinaria', { 
+                id: id, nombre: document.getElementById('maq-nombre').value, tipo: document.getElementById('maq-tipo').value, 
+                marca: document.getElementById('maq-marca').value, placa: document.getElementById('maq-placa').value, 
+                ano: document.getElementById('maq-ano').value, costoCompra: costo 
+            });
             closeModal('modal-maquinaria');
             if(currentView === 'maquina-detalle') verDetalleMaquina(id); else renderMaquinaria();
         }
@@ -916,20 +1002,23 @@
         async function fillMaquinaEditForm(id) {
             const m = (await dbGetAll('maquinaria')).find(x => x.id === id);
             if(m) {
-                document.getElementById('maq-id').value = m.id; document.getElementById('maq-nombre').value = m.nombre; document.getElementById('maq-tipo').value = m.tipo; document.getElementById('maq-marca').value = m.marca || ''; document.getElementById('maq-placa').value = m.placa || ''; document.getElementById('maq-ano').value = m.ano || '';
+                document.getElementById('maq-id').value = m.id; document.getElementById('maq-nombre').value = m.nombre; 
+                document.getElementById('maq-tipo').value = m.tipo; document.getElementById('maq-marca').value = m.marca || ''; 
+                document.getElementById('maq-placa').value = m.placa || ''; document.getElementById('maq-ano').value = m.ano || '';
+                document.getElementById('maq-costo').value = m.costoCompra || 0;
             }
         }
 
         async function renderMaquinaria() {
-            const maqs = await dbGetAll('maquinaria');
-            const mants = await dbGetAll('mantenimientos');
-            const container = document.getElementById('maquinaria-list');
-            container.innerHTML = '';
+            const maqs = await dbGetAll('maquinaria'); const mants = await dbGetAll('mantenimientos');
+            const container = document.getElementById('maquinaria-list'); container.innerHTML = '';
             if(!maqs.length) { container.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">No hay maquinaria registrada.</div>`; return; }
 
             maqs.forEach(m => {
                 const mc = mants.filter(x => x.maquinaId === m.id);
-                const costoTotal = mc.reduce((sum, item) => sum + (item.costoTotal || 0), 0);
+                const costoMants = mc.reduce((sum, item) => sum + (item.costoTotal || 0), 0);
+                const costoTotal = (m.costoCompra || 0) + costoMants;
+                
                 let icon = m.tipo === 'Tractor' ? 'tractor' : (m.tipo === 'Generador' ? 'zap' : (m.tipo === 'Moto' ? 'bike' : 'truck'));
                 container.innerHTML += `
                     <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md transition" onclick="verDetalleMaquina('${m.id}')">
@@ -937,7 +1026,7 @@
                             <div class="flex items-center gap-3 mb-2 border-b pb-2"><div class="bg-blue-50 text-blue-600 p-2 rounded-full"><i data-lucide="${icon}" class="w-5 h-5"></i></div><div><h4 class="font-bold text-lg">${m.nombre}</h4><p class="text-xs text-gray-500">${m.tipo} - ${m.marca || 'S/M'}</p></div></div>
                             <p class="text-sm text-gray-600">Placa/Serie: <span class="font-medium">${m.placa || 'N/A'}</span></p>
                         </div>
-                        <div class="mt-4 flex justify-between items-center text-sm font-bold border-t pt-3"><span class="text-gray-500">${mc.length} Registros</span><span class="text-red-500">Gasto: $${costoTotal.toFixed(2)}</span></div>
+                        <div class="mt-4 flex justify-between items-center text-sm font-bold border-t pt-3"><span class="text-gray-500">${mc.length} Registros</span><span class="text-red-500">Inversión: $${costoTotal.toFixed(2)}</span></div>
                     </div>`;
             }); lucide.createIcons();
         }
@@ -946,6 +1035,7 @@
             currentMaquinaId = id; const a = (await dbGetAll('maquinaria')).find(x => x.id === id); if(!a) return;
             document.getElementById('det-maq-nombre').innerText = a.nombre;
             document.getElementById('det-maq-sub').innerText = `${a.tipo} · ${a.marca||'S/M'} · Placa: ${a.placa||'N/A'} · Año: ${a.ano||'N/A'}`;
+            document.getElementById('det-maq-costo-compra').innerText = `$${(a.costoCompra || 0).toFixed(2)}`;
             renderMantenimientos(); navigate('maquina-detalle');
         }
 
@@ -956,7 +1046,7 @@
 
         async function loadInventarioSelectsForMaquinaria() {
             const valid = (await dbGetAll('inventario')).filter(i => i.categoria.includes('Combustible') || i.categoria.includes('Repuestos') || i.categoria.includes('Herramientas'));
-            document.getElementById('mt-producto').innerHTML = `<option value="">-- Gasto Externo o Servicio --</option>` + valid.map(i => `<option value="${i.id}">${i.nombre} ($${i.costo.toFixed(2)}) - Disp: ${i.stock}</option>`).join('');
+            document.getElementById('mt-producto').innerHTML = `<option value="">-- Gasto Externo o Servicio --</option>` + valid.map(i => `<option value="${i.id}">${i.nombre} ($${i.costo.toFixed(2)}) - Disp: ${i.stock} ${i.unidad}</option>`).join('');
         }
 
         async function saveMantenimiento(e) {
@@ -968,6 +1058,7 @@
 
             if(prodId) {
                 const item = (await dbGetAll('inventario')).find(i => i.id === prodId);
+                // Si el item cuesta 20 dolares el frasco/unidad, asume que el costo unitario por dosis/ml configurado es directo.
                 if(item) { costoInsumo = item.costo * cant; item.stock -= cant; await dbAdd('inventario', item); }
             }
 
@@ -978,7 +1069,10 @@
         async function renderMantenimientos() {
             if(!currentMaquinaId) return;
             const mants = (await dbGetAll('mantenimientos')).filter(e => e.maquinaId === currentMaquinaId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-            const inv = await dbGetAll('inventario'); let totalInversion = 0;
+            const maquina = (await dbGetAll('maquinaria')).find(x => x.id === currentMaquinaId);
+            const inv = await dbGetAll('inventario'); 
+            
+            let totalInversion = maquina.costoCompra || 0;
 
             document.getElementById('list-mantenimientos').innerHTML = mants.map(ev => {
                 totalInversion += (ev.costoTotal || 0); const p = inv.find(i => i.id === ev.productoId);
@@ -989,11 +1083,22 @@
 
         async function borrarMantenimiento(id) { if(confirm('¿Eliminar?')){ await dbDelete('mantenimientos', id); renderMantenimientos(); } }
 
-        // ================= REPORTES Y FINANZAS =================
+        // ================= REPORTES, FINANZAS Y PROYECCIONES =================
+        window.currentPesoTotal = 0;
+        window.currentLecheTotal = 0;
+
+        function calcularProyecciones() {
+            const pCarne = parseFloat(document.getElementById('precio-carne').value || 0);
+            const pLeche = parseFloat(document.getElementById('precio-leche').value || 0);
+            document.getElementById('valor-carne-est').innerText = `$${(window.currentPesoTotal * pCarne).toFixed(2)}`;
+            document.getElementById('valor-leche-est').innerText = `$${(window.currentLecheTotal * pLeche).toFixed(2)}`;
+        }
+
         async function renderReportes() {
             let animales = await dbGetAll('animales');
             let eventos = await dbGetAll('eventos');
             const mants = await dbGetAll('mantenimientos');
+            const maquinarias = await dbGetAll('maquinaria');
 
             if(globalSpeciesFilter === "Mascota") {
                 animales = animales.filter(a => isPet(a.especie));
@@ -1006,15 +1111,44 @@
             }
 
             let costoSalud = 0, costoAlimento = 0, costoMaquinaria = 0;
-            eventos.forEach(e => { if(e.costo > 0) { if(e.categoria.includes('Salud') || e.categoria.includes('Reproducción')) costoSalud += e.costo; else costoAlimento += e.costo; } });
+            
+            // Sumar costos de compra de maquinaria
+            maquinarias.forEach(m => { costoMaquinaria += (m.costoCompra || 0); });
+
+            let pesoTotalEngorde = 0;
+            let lecheTotal = 0;
+
+            animales.forEach(a => {
+                // Para calcular peso actual: Buscar último evento de Pesaje o usar peso inicial
+                if(a.estado === 'Engorde' || a.proposito === 'Carne') {
+                    const pesajes = eventos.filter(e => e.animalId === a.id && e.tipo === 'Pesaje').sort((x,y) => new Date(y.fecha) - new Date(x.fecha));
+                    if(pesajes.length > 0) pesoTotalEngorde += parseFloat(pesajes[0].valor || 0);
+                    else pesoTotalEngorde += parseFloat(a.peso || 0);
+                }
+            });
+
+            eventos.forEach(e => { 
+                if(e.costo > 0) { 
+                    if(e.categoria.includes('Salud') || e.categoria.includes('Reproducción')) costoSalud += e.costo; 
+                    else costoAlimento += e.costo; 
+                } 
+                if(e.tipo === 'Ordeño') lecheTotal += parseFloat(e.valor || 0);
+            });
             mants.forEach(m => { costoMaquinaria += (m.costoTotal || 0); });
 
             document.getElementById('rep-gasto-total').innerText = `$${(costoSalud + costoAlimento + costoMaquinaria).toFixed(2)}`;
+            
+            // Actualizar variables y DOM de Proyecciones
+            window.currentPesoTotal = pesoTotalEngorde;
+            window.currentLecheTotal = lecheTotal;
+            document.getElementById('proy-kg-total').innerText = `${pesoTotalEngorde.toFixed(2)} Kg`;
+            document.getElementById('proy-lt-total').innerText = `${lecheTotal.toFixed(2)} Lts`;
+            calcularProyecciones();
 
             if(chartCats) chartCats.destroy(); if(chartMensual) chartMensual.destroy();
 
             const ctxCat = document.getElementById('chartCategorias').getContext('2d');
-            chartCats = new Chart(ctxCat, { type: 'doughnut', data: { labels: ['Salud/Manejo', 'Alimentación', 'Maquinaria'], datasets: [{ data: [costoSalud, costoAlimento, costoMaquinaria], backgroundColor: ['#10B981', '#F59E0B', '#3B82F6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false } });
+            chartCats = new Chart(ctxCat, { type: 'doughnut', data: { labels: ['Salud/Manejo', 'Alimentación', 'Operación Maquinaria'], datasets: [{ data: [costoSalud, costoAlimento, costoMaquinaria], backgroundColor: ['#10B981', '#F59E0B', '#3B82F6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false } });
 
             const meses = {}; const formatMonth = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}`;
             for(let i=5; i>=0; i--){ const d = new Date(); d.setMonth(d.getMonth() - i); meses[formatMonth(d)] = { animal: 0, maquina: 0 }; }
@@ -1044,7 +1178,7 @@
         async function borrarProducto(id) { if(confirm("¿Eliminar? Eventos pasados conservan su costo.")){ await dbDelete('inventario', id); renderInventario(); loadInventarioSelects(); } }
 
         async function loadInventarioSelects() {
-            const options = `<option value="">-- Ninguno / Registro Manual --</option>` + (await dbGetAll('inventario')).map(i => `<option value="${i.id}">${i.nombre} ($${i.costo.toFixed(2)}) - ${i.stock}</option>`).join('');
+            const options = `<option value="">-- Ninguno / Registro Manual --</option>` + (await dbGetAll('inventario')).map(i => `<option value="${i.id}">${i.nombre} ($${i.costo.toFixed(2)}) - Disp: ${i.stock} ${i.unidad}</option>`).join('');
             if(document.getElementById('ev-producto')) document.getElementById('ev-producto').innerHTML = options;
             if(document.getElementById('ev-mas-producto')) document.getElementById('ev-mas-producto').innerHTML = options;
         }
@@ -1112,12 +1246,116 @@
 
         // ================= ANIMALES Y MASCOTAS =================
         async function saveLote(e) { e.preventDefault(); await dbAdd('lotes', { id: generateId(), nombre: document.getElementById('lote-nombre').value, desc: document.getElementById('lote-desc').value }); closeModal('modal-lote'); renderLotes(); }
-        async function renderLotes() { const lotes = await dbGetAll('lotes'); let animales = await dbGetAll('animales'); if(globalSpeciesFilter==="Mascota") animales = animales.filter(a => isPet(a.especie)); else if(globalSpeciesFilter) animales = animales.filter(a => a.especie === globalSpeciesFilter); const container = document.getElementById('lotes-list'); container.innerHTML = ''; lotes.forEach(l => { const count = animales.filter(a => a.loteId === l.id).length; if(count>0||!globalSpeciesFilter) container.innerHTML += `<div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm"><h4 class="font-bold text-lg">${l.nombre} (${count})</h4><p class="text-sm text-gray-500 mb-4 h-8 overflow-hidden">${l.desc||''}</p><button onclick="document.getElementById('mas-lote-id').value='${l.id}'; openModal('modal-masivo')" class="text-sm text-blue-600 mr-3">Generar</button><button onclick="document.getElementById('ev-mas-lote-id').value='${l.id}'; openModal('modal-evento-masivo')" class="text-sm text-green-600 mr-3">Tratar</button><button onclick="borrarLote('${l.id}')" class="text-sm text-red-500">Borrar</button></div>`;}); }
-        async function borrarLote(id) { await dbDelete('lotes', id); renderLotes(); }
-        async function generarMasivo(e) { e.preventDefault(); const lid=document.getElementById('mas-lote-id').value, pre=document.getElementById('mas-prefijo').value, s=parseInt(document.getElementById('mas-inicio').value), en=parseInt(document.getElementById('mas-fin').value); for(let i=s;i<=en;i++) await dbAdd('animales',{id:generateId(),arete:`${pre}${i}`,especie:document.getElementById('mas-especie').value,loteId:lid,estado:document.getElementById('mas-estado').value, sexo:document.getElementById('mas-sexo').value, raza:document.getElementById('mas-raza').value}); closeModal('modal-masivo'); renderLotes(); }
-        async function saveEventoMasivo(e) { e.preventDefault(); const lid=document.getElementById('ev-mas-lote-id').value, t=document.getElementById('ev-mas-tipo').value, d=parseFloat(document.getElementById('ev-mas-dosis').value); const an = (await dbGetAll('animales')).filter(x=>x.loteId===lid); for(let a of an) await dbAdd('eventos',{id:generateId(), animalId:a.id, categoria:'Salud', tipo:t, valor:d, fecha:document.getElementById('ev-mas-fecha').value, timestamp: new Date().toISOString()}); closeModal('modal-evento-masivo'); alert("Lote tratado!"); }
         
-        async function saveAnimal(e) { e.preventDefault(); const id = document.getElementById('animal-id').value || generateId(); await dbAdd('animales', { id, arete: document.getElementById('an-arete').value, nombre: document.getElementById('an-nombre').value, especie: document.getElementById('an-especie').value, raza: document.getElementById('an-raza').value, sexo: document.getElementById('an-sexo').value, proposito: document.getElementById('an-proposito').value, estado: document.getElementById('an-estado').value, loteId: document.getElementById('an-lote').value, madre: document.getElementById('an-madre').value, padre: document.getElementById('an-padre').value }); closeModal('modal-animal'); if(currentView === 'animal-detalle') verDetalleAnimal(id); else renderAnimales(); }
+        async function renderLotes() { 
+            const lotes = await dbGetAll('lotes'); let animales = await dbGetAll('animales'); 
+            if(globalSpeciesFilter==="Mascota") animales = animales.filter(a => isPet(a.especie)); 
+            else if(globalSpeciesFilter) animales = animales.filter(a => a.especie === globalSpeciesFilter); 
+            
+            const container = document.getElementById('lotes-list'); container.innerHTML = ''; 
+            lotes.forEach(l => { 
+                const count = animales.filter(a => a.loteId === l.id).length; 
+                if(count>0||!globalSpeciesFilter) {
+                    container.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between min-h-[160px]">
+                        <div>
+                            <h4 class="font-bold text-lg mb-1">${l.nombre} <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full align-middle ml-1 border border-green-200">${count} indiv.</span></h4>
+                            <p class="text-sm text-gray-500 mb-4 line-clamp-2">${l.desc||'Sin descripción'}</p>
+                        </div>
+                        <div class="mt-auto border-t pt-3 flex flex-wrap gap-2">
+                            <button onclick="document.getElementById('mas-lote-id').value='${l.id}'; openModal('modal-masivo')" class="text-xs font-semibold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded transition"><i data-lucide="copy-plus" class="inline w-3 h-3"></i> Generar</button>
+                            <button onclick="document.getElementById('ev-mas-lote-id').value='${l.id}'; openModal('modal-evento-masivo')" class="text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded transition"><i data-lucide="activity" class="inline w-3 h-3"></i> Tratar Lote</button>
+                            <button onclick="borrarLote('${l.id}')" class="text-xs font-semibold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded transition"><i data-lucide="trash-2" class="inline w-3 h-3"></i> Borrar</button>
+                        </div>
+                    </div>`;
+                }
+            });
+            lucide.createIcons();
+        }
+        
+        async function borrarLote(id) { await dbDelete('lotes', id); renderLotes(); }
+        
+        async function generarMasivo(e) { 
+            e.preventDefault(); 
+            const lid = document.getElementById('mas-lote-id').value;
+            const pre = document.getElementById('mas-prefijo').value;
+            const s = parseInt(document.getElementById('mas-inicio').value);
+            const en = parseInt(document.getElementById('mas-fin').value); 
+            
+            const especie = document.getElementById('mas-especie').value;
+            const estado = document.getElementById('mas-estado').value;
+            const sexo = document.getElementById('mas-sexo').value;
+            const raza = document.getElementById('mas-raza').value;
+            
+            for(let i=s; i<=en; i++) {
+                await dbAdd('animales',{
+                    id: generateId(), 
+                    arete:`${pre}${i}`, 
+                    especie: especie, 
+                    loteId: lid, 
+                    estado: estado, 
+                    sexo: sexo, 
+                    raza: raza,
+                    proposito: isPet(especie) ? 'Compañía' : 'Carne'
+                }); 
+            }
+            closeModal('modal-masivo'); 
+            alert(`¡Se generaron ${en - s + 1} registros!\n(Asegúrate de que el filtro global coincida con la especie seleccionada para poder verlos).`);
+            renderLotes(); 
+            if(currentView === 'animales') renderAnimales();
+        }
+        
+        async function saveEventoMasivo(e) { 
+            e.preventDefault(); 
+            const lid=document.getElementById('ev-mas-lote-id').value;
+            const t=document.getElementById('ev-mas-tipo').value;
+            const d=parseFloat(document.getElementById('ev-mas-dosis').value); 
+            const prodId = document.getElementById('ev-mas-producto').value;
+            
+            const an = (await dbGetAll('animales')).filter(x=>x.loteId===lid); 
+            let costoTotalInsumo = 0;
+            
+            if(prodId) {
+                const item = (await dbGetAll('inventario')).find(i => i.id === prodId);
+                if(item) {
+                    costoTotalInsumo = item.costo * d;
+                    const stockNecesario = d * an.length;
+                    if(item.stock < stockNecesario) {
+                        if(!confirm(`Atención: Tienes ${item.stock} y necesitas ${stockNecesario}. El stock quedará en negativo. ¿Continuar?`)) return;
+                    }
+                    item.stock -= stockNecesario; 
+                    await dbAdd('inventario', item); 
+                }
+            }
+
+            for(let a of an) {
+                await dbAdd('eventos',{
+                    id: generateId(), animalId:a.id, categoria:'Salud/Masivo', tipo:t, valor:d, 
+                    productoId: prodId, costo: costoTotalInsumo,
+                    fecha:document.getElementById('ev-mas-fecha').value, 
+                    proxFecha: document.getElementById('ev-mas-prox').value,
+                    detalles: document.getElementById('ev-mas-det').value,
+                    timestamp: new Date().toISOString()
+                }); 
+            }
+            closeModal('modal-evento-masivo'); 
+            alert("¡Tratamiento aplicado a todo el lote exitosamente!"); 
+        }
+        
+        async function saveAnimal(e) { 
+            e.preventDefault(); 
+            const id = document.getElementById('animal-id').value || generateId(); 
+            await dbAdd('animales', { 
+                id, arete: document.getElementById('an-arete').value, nombre: document.getElementById('an-nombre').value, 
+                especie: document.getElementById('an-especie').value, raza: document.getElementById('an-raza').value, 
+                sexo: document.getElementById('an-sexo').value, proposito: document.getElementById('an-proposito').value, 
+                estado: document.getElementById('an-estado').value, loteId: document.getElementById('an-lote').value, 
+                madre: document.getElementById('an-madre').value, padre: document.getElementById('an-padre').value,
+                peso: document.getElementById('an-peso').value
+            }); 
+            closeModal('modal-animal'); 
+            if(currentView === 'animal-detalle') verDetalleAnimal(id); else renderAnimales(); 
+        }
         
         async function renderAnimales() { 
             let an = await dbGetAll('animales'); 
@@ -1134,7 +1372,7 @@
             }); 
             
             const sel = document.getElementById('an-lote');
-            if(sel) sel.innerHTML = '<option value="">Sin Lote/Zona</option>' + lotes.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
+            if(sel) sel.innerHTML = '<option value="">Sin Asignar</option>' + lotes.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
             lucide.createIcons();
         }
         
@@ -1145,20 +1383,118 @@
             document.getElementById('det-estado-badge').innerText=a.estado; 
             document.getElementById('animal-id').value=a.id; document.getElementById('an-arete').value=a.arete; 
             
-            document.getElementById('det-icon').setAttribute('data-lucide', isPet(a.especie) ? 'dog' : 'paw-print');
+            document.getElementById('det-madre').innerText = a.madre || 'No Registrada';
+            document.getElementById('det-padre').innerText = a.padre || 'No Registrado';
+
+            const iconEl = document.getElementById('det-icon');
+            const newIcon = document.createElement('i');
+            newIcon.setAttribute('data-lucide', isPet(a.especie) ? 'dog' : 'paw-print');
+            newIcon.className = 'w-8 h-8';
+            iconEl.parentNode.replaceChild(newIcon, iconEl);
+            newIcon.id = 'det-icon';
+
+            if(isPet(a.especie)){
+                document.getElementById('btn-reproduccion').style.display = 'none';
+            } else {
+                document.getElementById('btn-reproduccion').style.display = 'flex';
+            }
             
             renderEventosAnimal(); navigate('animal-detalle'); 
         }
+
+        async function borrarAnimal(id) {
+            if(confirm("¿Eliminar este individuo de forma permanente? Todo su historial se borrará.")) {
+                await dbDelete('animales', id);
+                navigate('animales');
+            }
+        }
         
-        function openEditAnimalModal() { openModal('modal-animal'); }
-        function openEventModal(cat) { document.getElementById('ev-categoria').value=cat; document.getElementById('ev-fecha').valueAsDate=new Date(); const ts=document.getElementById('ev-tipo'); ts.innerHTML=cat==='Salud'?`<option value="Vacuna">Vacuna</option><option value="Desparasitante">Desparasitante</option>`:(cat==='Reproducción'?`<option value="Monta">Monta/Cruce</option><option value="Parto">Parto</option>`:`<option value="Pesaje">Pesaje</option>`); openModal('modal-evento'); loadInventarioSelects(); }
-        async function saveEvento(e) { e.preventDefault(); const prodId = document.getElementById('ev-producto').value; const dosis = parseFloat(document.getElementById('ev-valor').value||1); let costo = 0; if(prodId){ const item = (await dbGetAll('inventario')).find(i=>i.id===prodId); if(item){ costo=item.costo*dosis; item.stock-=dosis; await dbAdd('inventario', item); } } await dbAdd('eventos', { id:generateId(), animalId:currentAnimalId, categoria:document.getElementById('ev-categoria').value, fecha:document.getElementById('ev-fecha').value, proxFecha: document.getElementById('ev-prox-fecha').value, tipo:document.getElementById('ev-tipo').value, valor:dosis, productoId:prodId, costo:costo, detalles:document.getElementById('ev-detalles').value, timestamp: new Date().toISOString() }); closeModal('modal-evento'); renderEventosAnimal(); }
-        async function renderEventosAnimal() { let ev = (await dbGetAll('eventos')).filter(e=>e.animalId===currentAnimalId).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); let inv = await dbGetAll('inventario'); let total=0; document.getElementById('list-historial').innerHTML=ev.map(e=>{ total+=(e.costo||0); const p = inv.find(i=>i.id===e.productoId); return `<li class="relative pl-6"><span class="absolute -left-[5px] top-2 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></span><div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm"><div class="flex justify-between font-bold"><span>${e.tipo} ${p?`(${p.nombre})`:''}</span><span class="text-gray-400 text-xs">${e.fecha}</span></div><p class="text-sm text-gray-600">${e.detalles||''}</p><p class="text-xs text-red-600 mt-1">Costo: $${(e.costo||0).toFixed(2)}</p></div></li>`; }).join(''); document.getElementById('det-costo-total').innerText = `$${total.toFixed(2)}`; }
+        function openEditAnimalModal() { 
+            openModal('modal-animal'); 
+            const a = currentAnimalId; // the current details are filled in saveAnimal fetch logic, but we need to populate forms
+            dbGetAll('animales').then(anims => {
+                const an = anims.find(x => x.id === a);
+                if(an) {
+                    ['arete', 'nombre', 'especie', 'raza', 'sexo', 'proposito', 'estado', 'lote', 'madre', 'padre'].forEach(f => {
+                        if(document.getElementById(`an-${f}`)) document.getElementById(`an-${f}`).value = an[f] || (f==='lote'?an.loteId:'');
+                    });
+                    document.getElementById('an-fecha-nac').value = an.fechaNac || '';
+                    document.getElementById('an-peso').value = an.peso || '';
+                    togglePetFields();
+                }
+            });
+        }
+
+        function openEventModal(cat) { 
+            document.getElementById('ev-categoria').value=cat; 
+            document.getElementById('ev-fecha').valueAsDate=new Date(); 
+            const ts=document.getElementById('ev-tipo'); 
+            const vc = document.getElementById('ev-valor-container');
+            const pc = document.getElementById('ev-producto-container');
+
+            ts.innerHTML=cat==='Salud'?`<option value="Vacuna">Vacuna</option><option value="Desparasitante">Desparasitante</option><option value="Vitamina">Vitamina / Min.</option><option value="Tratamiento">Tratamiento Médico</option>`:(cat==='Reproducción'?`<option value="Monta">Monta/Cruce</option><option value="Diag. Preñez (+)">Preñez (+)</option><option value="Diag. Preñez (-)">Preñez (-)</option><option value="Parto">Parto</option><option value="Secado">Secado</option>`:`<option value="Pesaje">Pesaje (Kg/Lb)</option><option value="Ordeño">Ordeño (Litros)</option>`); 
+            
+            if(cat === 'Salud') { vc.classList.remove('hidden'); pc.classList.remove('hidden'); document.getElementById('ev-valor-label').innerText = 'Dosis (ml, pastillas...)'; }
+            if(cat === 'Reproducción') { vc.classList.add('hidden'); pc.classList.add('hidden'); }
+            if(cat === 'Producción') { vc.classList.remove('hidden'); pc.classList.add('hidden'); document.getElementById('ev-valor-label').innerText = 'Valor (Peso / Litros)'; }
+
+            openModal('modal-evento'); loadInventarioSelects(); 
+        }
+        
+        async function saveEvento(e) { 
+            e.preventDefault(); 
+            const prodId = document.getElementById('ev-producto').value; 
+            const dosis = parseFloat(document.getElementById('ev-valor').value||1); 
+            let costo = 0; 
+            
+            if(prodId && !document.getElementById('ev-producto-container').classList.contains('hidden')){ 
+                const item = (await dbGetAll('inventario')).find(i=>i.id===prodId); 
+                if(item){ costo=item.costo*dosis; item.stock-=dosis; await dbAdd('inventario', item); } 
+            } 
+            
+            const ev = { id:generateId(), animalId:currentAnimalId, categoria:document.getElementById('ev-categoria').value, fecha:document.getElementById('ev-fecha').value, proxFecha: document.getElementById('ev-prox-fecha').value, tipo:document.getElementById('ev-tipo').value, valor:dosis, productoId:prodId, costo:costo, detalles:document.getElementById('ev-detalles').value, timestamp: new Date().toISOString() };
+            await dbAdd('eventos', ev); 
+
+            // Auto status logic
+            if(ev.categoria === 'Reproducción') {
+                const a = (await dbGetAll('animales')).find(x => x.id === currentAnimalId);
+                if(a) {
+                    if(ev.tipo.includes('Preñez (+)')) a.estado = 'Preñada';
+                    if(ev.tipo.includes('Preñez (-)') || ev.tipo === 'Parto') a.estado = 'Vacía';
+                    if(ev.tipo === 'Secado') a.estado = 'Seca';
+                    await dbAdd('animales', a); document.getElementById('det-estado-badge').innerText = a.estado;
+                }
+            }
+
+            closeModal('modal-evento'); renderEventosAnimal(); 
+        }
+        
+        async function renderEventosAnimal() { 
+            let ev = (await dbGetAll('eventos')).filter(e=>e.animalId===currentAnimalId).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
+            let inv = await dbGetAll('inventario'); let total=0; 
+            
+            document.getElementById('list-historial').innerHTML=ev.map(e=>{ 
+                total+=(e.costo||0); const p = inv.find(i=>i.id===e.productoId); 
+                let pTag = p && e.categoria === 'Salud' ? `<span class="bg-blue-50 text-blue-700 px-1 rounded text-xs ml-2 border border-blue-200">${e.valor} ${p.unidad} de ${p.nombre}</span>` : '';
+                let vTag = e.categoria === 'Producción' && e.valor ? `<span class="bg-orange-50 text-orange-700 px-1 rounded text-xs ml-2 border border-orange-200">Registrado: ${e.valor}</span>` : '';
+
+                return `<li class="relative pl-6"><span class="absolute -left-[5px] top-2 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></span><div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm"><div class="flex justify-between font-bold"><span>${e.tipo} ${pTag} ${vTag}</span><span class="text-gray-400 text-xs">${e.fecha}</span></div><p class="text-sm text-gray-600">${e.detalles||''}</p><div class="flex justify-between items-center"><p class="text-xs text-red-600 mt-1 font-bold">Costo Insumo: $${(e.costo||0).toFixed(2)}</p>${e.proxFecha ? `<span class="text-orange-500 text-xs font-bold"><i data-lucide="bell" class="inline w-3 h-3"></i> Próx: ${new Date(e.proxFecha).toLocaleDateString()}</span>` : ''}</div><button onclick="borrarEventoAnimal('${e.id}')" class="text-xs text-gray-400 hover:text-red-500 mt-2 block">Borrar Registro</button></div></li>`; 
+            }).join('') || '<p class="text-sm text-gray-500">Aún no hay registros médicos ni eventos en este historial.</p>'; 
+            
+            document.getElementById('det-costo-total').innerText = `$${total.toFixed(2)}`; 
+            lucide.createIcons();
+        }
+
+        async function borrarEventoAnimal(id) {
+            if(confirm("¿Eliminar registro del historial?")) {
+                await dbDelete('eventos', id); renderEventosAnimal();
+            }
+        }
 
         // ================= INIT =================
         window.onload = async () => {
             try { await initDB(); loadInventarioSelects(); navigate('dashboard'); }
-            catch (err) { alert("Error: Tu navegador no soporta IndexedDB local."); }
+            catch (err) { alert("Error: Tu navegador no soporta IndexedDB local. Intenta usar Chrome o Safari actualizado."); }
         };
     </script>
 </body>
