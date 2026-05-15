@@ -326,11 +326,21 @@
                         <i data-lucide="plus" class="w-4 h-4"></i> Registrar Individuo
                     </button>
                 </div>
+
+                <!-- Barra de Acciones Múltiples (Ventas/Exportación) -->
+                <div id="action-bar-animales" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center shadow-sm">
+                    <span class="text-blue-800 font-bold text-sm"><span id="count-selected">0</span> individuos seleccionados</span>
+                    <div class="flex gap-2">
+                        <button onclick="exportarSeleccionVenta()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded shadow-sm text-sm flex items-center gap-2 transition"><i data-lucide="share" class="w-4 h-4"></i> Exportar para Venta (.agr)</button>
+                        <button onclick="limpiarSeleccion()" class="text-gray-500 hover:text-gray-700 px-2 py-1.5 text-sm transition">Cancelar</button>
+                    </div>
+                </div>
                 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
                     <table class="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr class="bg-gray-50 text-gray-600 border-b">
+                                <th class="py-3 px-4 w-10"><input type="checkbox" id="check-all" onchange="toggleAllAnimals(this)" class="rounded text-green-600 focus:ring-green-500"></th>
                                 <th class="py-3 px-4 font-semibold">ID / Nombre</th>
                                 <th class="py-3 px-4 font-semibold">Genealogía (M/P)</th>
                                 <th class="py-3 px-4 font-semibold">Especie / Raza</th>
@@ -356,7 +366,7 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
                     <div class="p-6 sm:flex items-start justify-between border-b bg-gradient-to-r from-green-50 to-white">
                         <div class="flex items-center gap-4 mb-4 sm:mb-0">
-                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-600 shadow-sm border-2 border-green-100">
+                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-600 shadow-sm border-2 border-green-100 flex-shrink-0">
                                 <i data-lucide="paw-print" id="det-icon" class="w-8 h-8"></i>
                             </div>
                             <div>
@@ -369,21 +379,38 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col items-end gap-2">
+                        <div class="flex flex-col items-end gap-2 w-full sm:w-auto">
                             <div class="flex gap-2">
                                 <span id="det-estado-badge" class="px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-800 border border-green-200">Lactando</span>
                                 <button onclick="openEditAnimalModal()" class="bg-white border shadow-sm text-gray-600 hover:bg-gray-50 py-1 px-3 rounded-lg flex items-center gap-1"><i data-lucide="edit" class="w-4 h-4"></i> Editar</button>
                                 <button onclick="borrarAnimal(currentAnimalId)" class="bg-red-50 border border-red-100 text-red-600 hover:bg-red-100 py-1 px-3 rounded-lg flex items-center gap-1" title="Eliminar Individuo"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
-                            <div class="mt-2 text-sm bg-blue-50 text-blue-800 px-3 py-1 rounded-lg border border-blue-100">
-                                Inversión Acumulada: <strong id="det-costo-total">$0.00</strong>
+                            
+                            <!-- Detailed Investment Box -->
+                            <div class="mt-2 text-sm bg-blue-50 text-blue-800 px-3 py-2 rounded-lg border border-blue-100 flex flex-col gap-1 w-full text-right sm:text-left">
+                                <div>Inversión Acumulada: <strong id="det-costo-total" class="text-lg">$0.00</strong></div>
+                                <div class="text-xs flex gap-3 text-blue-600 justify-end sm:justify-start flex-wrap">
+                                    <span>Alimento: <strong id="det-costo-alim">$0.00</strong></span>
+                                    <span>Salud: <strong id="det-costo-salud">$0.00</strong></span>
+                                    <span>Otros: <strong id="det-costo-otros">$0.00</strong></span>
+                                </div>
                             </div>
+
+                            <!-- Weight Projection Box -->
+                            <div id="det-rendimiento-box" class="mt-1 text-sm bg-orange-50 text-orange-800 px-3 py-2 rounded-lg border border-orange-100 hidden flex-col gap-1 w-full text-right sm:text-left">
+                                <div>Peso Actual Estimado: <strong id="det-peso-actual" class="text-lg text-orange-700">0 Kg</strong></div>
+                                <div class="text-xs flex gap-3 text-orange-600 justify-end sm:justify-start flex-wrap">
+                                    <span>Ganancia Diaria: <strong id="det-gdp">0 Kg/día</strong></span>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                     
                     <div class="p-4 border-b bg-gray-50">
                         <div class="flex flex-wrap gap-2">
                             <button onclick="openEventModal('Salud')" class="bg-white border-blue-200 border text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="syringe" class="w-4 h-4"></i> Aplicar Tratamiento/Vacuna</button>
+                            <button onclick="openEventModal('Alimentación')" class="bg-white border-yellow-200 border text-yellow-700 hover:bg-yellow-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="wheat" class="w-4 h-4"></i> Suministro Alimento Especial</button>
                             <button onclick="openEventModal('Reproducción')" class="bg-white border-pink-200 border text-pink-700 hover:bg-pink-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm" id="btn-reproduccion"><i data-lucide="heart" class="w-4 h-4"></i> Registro Reproductivo</button>
                             <button onclick="openEventModal('Producción')" class="bg-white border-orange-200 border text-orange-700 hover:bg-orange-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="scale" class="w-4 h-4"></i> Pesaje / Control</button>
                         </div>
@@ -422,6 +449,27 @@
 
     <!-- ================= MODALS ================= -->
     
+    <!-- Modal Smart Import -->
+    <div id="modal-import-opciones" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
+            <h3 class="text-xl font-bold mb-3 text-gray-800"><i data-lucide="download-cloud" class="inline w-6 h-6 text-blue-500 mr-1"></i> Opciones de Importación</h3>
+            <p class="text-sm text-gray-600 mb-5" id="import-msg"></p>
+            <div class="space-y-3">
+                <button onclick="ejecutarImportacion('add')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold py-3 rounded-lg border border-blue-200 text-left px-4 flex items-center gap-4 transition">
+                    <i data-lucide="plus-circle" class="w-8 h-8 text-blue-500"></i> 
+                    <div><span class="block text-sm">Añadir a mi finca (Compra/Fusión)</span><span class="font-normal text-xs text-blue-600">Suma los nuevos datos. No borra tu información actual.</span></div>
+                </button>
+                <button onclick="ejecutarImportacion('replace')" class="w-full bg-red-50 hover:bg-red-100 text-red-900 font-bold py-3 rounded-lg border border-red-200 text-left px-4 flex items-center gap-4 transition">
+                    <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500"></i> 
+                    <div><span class="block text-sm">Reemplazar Todo (Restaurar)</span><span class="font-normal text-xs text-red-600">Borra tu granja actual e instala la del archivo.</span></div>
+                </button>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeModal('modal-import-opciones')" class="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Inventario -->
     <div id="modal-inventario" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content max-h-[95vh] overflow-y-auto">
@@ -766,8 +814,8 @@
                         <h4 class="text-sm font-bold text-gray-500 mb-2"><i data-lucide="git-merge" class="inline w-4 h-4"></i> Genealogía (Árbol Familiar)</h4>
                         <datalist id="lista-animales"></datalist>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-sm font-medium mb-1 text-pink-700">Madre (ID/Nombre)</label><input type="text" id="an-madre" list="lista-animales" class="w-full px-3 py-2 border border-pink-200 rounded-lg bg-pink-50" placeholder="Ej. Vaca #12"></div>
-                            <div><label class="block text-sm font-medium mb-1 text-blue-700">Padre (ID/Nombre)</label><input type="text" id="an-padre" list="lista-animales" class="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50" placeholder="Ej. Toro Max"></div>
+                            <div><label class="block text-sm font-medium mb-1 text-pink-700">Madre (ID/Nombre)</label><input type="text" id="an-madre" list="lista-animales" class="w-full px-3 py-2 border border-pink-200 rounded-lg bg-pink-50" placeholder="Opcional"></div>
+                            <div><label class="block text-sm font-medium mb-1 text-blue-700">Padre (ID/Nombre)</label><input type="text" id="an-padre" list="lista-animales" class="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50" placeholder="Opcional"></div>
                         </div>
                     </div>
                     <div><label class="block text-sm font-medium mb-1">Peso Inicial (Kg)</label><input type="number" step="0.01" id="an-peso" class="w-full px-3 py-2 border rounded-lg"></div>
@@ -825,6 +873,7 @@
         let currentView = 'dashboard';
         let chartCats = null;
         let chartMensual = null;
+        let selectedAnimals = new Set(); // Para exportación por venta
 
         const isPet = (especie) => ['Perro', 'Gato', 'Ave', 'Mascota'].includes(especie);
 
@@ -1021,7 +1070,7 @@
         
         const generateId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
 
-        // ================= IMPORT / EXPORT (.agr) =================
+        // ================= IMPORT / EXPORT (.agr) & SMART IMPORT =================
         async function exportData() {
             const data = { 
                 version: 3, date: new Date().toISOString(), 
@@ -1048,35 +1097,11 @@
                         throw new Error("El archivo no tiene el formato correcto.");
                     }
                     
-                    if(confirm("ATENCIÓN: Esto reemplazará todos tus datos actuales con los del archivo de respaldo. ¿Estás completamente seguro de continuar?")) {
-                        const stores = ['lotes', 'animales', 'eventos', 'inventario', 'maquinaria', 'mantenimientos'];
-                        
-                        // 1. Limpiar base de datos
-                        for(let s of stores) {
-                            if(db.objectStoreNames.contains(s)) {
-                                await new Promise((res, rej) => {
-                                    const req = db.transaction([s], 'readwrite').objectStore(s).clear();
-                                    req.onsuccess = res; req.onerror = rej;
-                                });
-                            }
-                        }
-                        
-                        // 2. Insertar información por bloques (Soporta miles de registros de forma robusta)
-                        for(let s of stores) {
-                            if(data[s] && Array.isArray(data[s]) && data[s].length > 0 && db.objectStoreNames.contains(s)) {
-                                await new Promise((res, rej) => {
-                                    const tx = db.transaction([s], 'readwrite');
-                                    const store = tx.objectStore(s);
-                                    data[s].forEach(item => store.put(item));
-                                    tx.oncomplete = res;
-                                    tx.onerror = () => rej(tx.error);
-                                });
-                            }
-                        }
-                        
-                        alert("¡Datos restaurados correctamente! La aplicación se recargará.");
-                        window.location.reload();
-                    }
+                    window.pendingImportData = data;
+                    const cAnims = data.animales ? data.animales.length : 0;
+                    document.getElementById('import-msg').innerText = `El archivo contiene ${cAnims} individuo(s) y sus historiales. ¿Qué deseas hacer con esta información?`;
+                    openModal('modal-import-opciones');
+
                 } catch(err) {
                     console.error("Error en la importación:", err);
                     alert("Error al cargar el archivo: " + err.message + "\nAsegúrate de seleccionar un archivo de respaldo (.agr o .json) válido generado por esta app.");
@@ -1084,6 +1109,44 @@
                 e.target.value = ''; // Limpiar el input
             };
             reader.readAsText(file);
+        }
+
+        async function ejecutarImportacion(mode) {
+            if(!window.pendingImportData) return;
+            const data = window.pendingImportData;
+            const stores = ['lotes', 'animales', 'eventos', 'inventario', 'maquinaria', 'mantenimientos'];
+            
+            try {
+                if(mode === 'replace') {
+                    for(let s of stores) {
+                        if(db.objectStoreNames.contains(s)) {
+                            await new Promise((res, rej) => {
+                                const req = db.transaction([s], 'readwrite').objectStore(s).clear();
+                                req.onsuccess = res; req.onerror = rej;
+                            });
+                        }
+                    }
+                }
+
+                // Insertar información (Si es Add, los Ids nuevos no chocan por ser UUID. Si chocan, se actualizan)
+                for(let s of stores) {
+                    if(data[s] && Array.isArray(data[s]) && data[s].length > 0 && db.objectStoreNames.contains(s)) {
+                        await new Promise((res, rej) => {
+                            const tx = db.transaction([s], 'readwrite');
+                            const store = tx.objectStore(s);
+                            data[s].forEach(item => store.put(item));
+                            tx.oncomplete = res;
+                            tx.onerror = () => rej(tx.error);
+                        });
+                    }
+                }
+                
+                alert("¡Datos procesados correctamente! La aplicación se recargará.");
+                window.location.reload();
+            } catch (err) {
+                alert("Hubo un error durante la importación.");
+                console.error(err);
+            }
         }
 
         // ================= MAQUINARIA Y VEHICULOS =================
@@ -1451,7 +1514,8 @@
                     estado: estado, 
                     sexo: sexo, 
                     raza: raza,
-                    proposito: isPet(especie) ? 'Compañía' : 'Carne'
+                    proposito: isPet(especie) ? 'Compañía' : 'Carne',
+                    createdAt: new Date().toISOString()
                 }); 
             }
             closeModal('modal-masivo'); 
@@ -1466,6 +1530,7 @@
             const t=document.getElementById('ev-mas-tipo').value;
             const d=parseFloat(document.getElementById('ev-mas-dosis').value); 
             const prodId = document.getElementById('ev-mas-producto').value;
+            const cat = t === 'Alimentación' ? 'Alimentación' : 'Salud';
             
             const an = (await dbGetAll('animales')).filter(x=>x.loteId===lid); 
             let costoInsumoUnitario = 0;
@@ -1485,7 +1550,7 @@
 
             for(let a of an) {
                 await dbAdd('eventos',{
-                    id: generateId(), animalId:a.id, categoria:'Salud/Masivo', tipo:t, valor:d, 
+                    id: generateId(), animalId:a.id, categoria: cat, tipo:t, valor:d, 
                     productoId: prodId, costo: costoInsumoUnitario,
                     fecha:document.getElementById('ev-mas-fecha').value, 
                     proxFecha: document.getElementById('ev-mas-prox').value,
@@ -1500,18 +1565,69 @@
         async function saveAnimal(e) { 
             e.preventDefault(); 
             const id = document.getElementById('animal-id').value || generateId(); 
+            const animalPre = (await dbGetAll('animales')).find(x=>x.id===id);
+
             await dbAdd('animales', { 
                 id, arete: document.getElementById('an-arete').value, nombre: document.getElementById('an-nombre').value, 
                 especie: document.getElementById('an-especie').value, raza: document.getElementById('an-raza').value, 
                 sexo: document.getElementById('an-sexo').value, proposito: document.getElementById('an-proposito').value, 
                 estado: document.getElementById('an-estado').value, loteId: document.getElementById('an-lote').value, 
                 madre: document.getElementById('an-madre').value, padre: document.getElementById('an-padre').value,
-                peso: document.getElementById('an-peso').value, fechaNac: document.getElementById('an-fecha-nac').value
+                peso: document.getElementById('an-peso').value, fechaNac: document.getElementById('an-fecha-nac').value,
+                createdAt: animalPre ? animalPre.createdAt : new Date().toISOString()
             }); 
             closeModal('modal-animal'); 
             if(currentView === 'animal-detalle') verDetalleAnimal(id); else renderAnimales(); 
         }
         
+        // ---- MANEJO MULTIPLE Y VENTAS ----
+        function toggleAllAnimals(checkbox) {
+            const checkboxes = document.querySelectorAll('.animal-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+                toggleAnimalSelection(cb.value, cb.checked);
+            });
+        }
+
+        function toggleAnimalSelection(id, isChecked) {
+            if(isChecked) selectedAnimals.add(id);
+            else selectedAnimals.delete(id);
+            actualizarBarraSeleccion();
+        }
+
+        function actualizarBarraSeleccion() {
+            const bar = document.getElementById('action-bar-animales');
+            const count = document.getElementById('count-selected');
+            count.innerText = selectedAnimals.size;
+            if(selectedAnimals.size > 0) bar.classList.remove('hidden');
+            else bar.classList.add('hidden');
+        }
+
+        function limpiarSeleccion() {
+            selectedAnimals.clear();
+            document.querySelectorAll('.animal-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('check-all').checked = false;
+            actualizarBarraSeleccion();
+        }
+
+        async function exportarSeleccionVenta() {
+            if(selectedAnimals.size === 0) return;
+            const animales = await dbGetAll('animales');
+            const eventos = await dbGetAll('eventos');
+
+            const exportAnims = animales.filter(a => selectedAnimals.has(a.id));
+            const exportEvts = eventos.filter(e => selectedAnimals.has(e.animalId));
+
+            const data = { version: 3, type: 'venta', date: new Date().toISOString(), animales: exportAnims, eventos: exportEvts };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+            a.download = `Venta_Animales_${new Date().toISOString().split('T')[0]}.agr`; 
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+            limpiarSeleccion();
+        }
+        // ----------------------------------
+
         async function renderAnimales() { 
             let an = await dbGetAll('animales'); 
             const lotes = await dbGetAll('lotes');
@@ -1523,11 +1639,21 @@
             const tb = document.getElementById('animales-list'); tb.innerHTML=''; 
             an.filter(a=>(a.arete.toLowerCase().includes(search) || (a.nombre||'').toLowerCase().includes(search))).slice(0,200).forEach(a => { 
                 const lName = lotes.find(l => l.id === a.loteId)?.nombre || 'Sin Zona';
-                tb.innerHTML+=`<tr class="cursor-pointer hover:bg-gray-50 border-b" onclick="verDetalleAnimal('${a.id}')"><td class="p-3 font-bold">${a.arete} <span class="font-normal text-xs block text-gray-500">${a.nombre||''}</span></td><td class="p-3 text-xs text-gray-500">M:${a.madre||'-'}<br>P:${a.padre||'-'}</td><td class="p-3 text-xs">${a.especie} - ${a.raza||'S/R'}</td><td class="p-3 text-xs">${lName}</td><td class="p-3"><span class="px-2 border rounded text-xs font-bold">${a.estado}</span></td><td class="p-3 text-center"><button class="text-green-600"><i data-lucide="folder-open" class="w-5 h-5"></i></button></td></tr>`; 
+                const isChecked = selectedAnimals.has(a.id) ? 'checked' : '';
+                tb.innerHTML+=`<tr class="hover:bg-gray-50 border-b transition"><td class="p-3 w-10"><input type="checkbox" value="${a.id}" class="animal-checkbox rounded text-green-600 focus:ring-green-500" ${isChecked} onchange="toggleAnimalSelection('${a.id}', this.checked)"></td><td class="p-3 font-bold cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${a.arete} <span class="font-normal text-xs block text-gray-500">${a.nombre||''}</span></td><td class="p-3 text-xs text-gray-500 cursor-pointer" onclick="verDetalleAnimal('${a.id}')">M:${a.madre||'-'}<br>P:${a.padre||'-'}</td><td class="p-3 text-xs cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${a.especie} - ${a.raza||'S/R'}</td><td class="p-3 text-xs cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${lName}</td><td class="p-3 cursor-pointer" onclick="verDetalleAnimal('${a.id}')"><span class="px-2 border rounded text-xs font-bold">${a.estado}</span></td><td class="p-3 text-center cursor-pointer" onclick="verDetalleAnimal('${a.id}')"><button class="text-green-600"><i data-lucide="folder-open" class="w-5 h-5"></i></button></td></tr>`; 
             }); 
             
             const sel = document.getElementById('an-lote');
             if(sel) sel.innerHTML = '<option value="">Sin Asignar</option>' + lotes.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
+            
+            // Re-sync "check-all" state
+            const renderedCheckboxes = document.querySelectorAll('.animal-checkbox');
+            if(renderedCheckboxes.length > 0 && Array.from(renderedCheckboxes).every(cb => cb.checked)) {
+                document.getElementById('check-all').checked = true;
+            } else {
+                document.getElementById('check-all').checked = false;
+            }
+
             lucide.createIcons();
         }
         
@@ -1598,9 +1724,9 @@
             const vc = document.getElementById('ev-valor-container');
             const pc = document.getElementById('ev-producto-container');
 
-            ts.innerHTML=cat==='Salud'?`<option value="Vacuna">Vacuna</option><option value="Desparasitante">Desparasitante</option><option value="Vitamina">Vitamina / Min.</option><option value="Tratamiento">Tratamiento Médico</option>`:(cat==='Reproducción'?`<option value="Monta">Monta/Cruce</option><option value="Diag. Preñez (+)">Preñez (+)</option><option value="Diag. Preñez (-)">Preñez (-)</option><option value="Parto">Parto</option><option value="Secado">Secado</option>`:`<option value="Pesaje">Pesaje (Kg/Lb)</option><option value="Ordeño">Ordeño (Litros)</option>`); 
+            ts.innerHTML=cat==='Salud'?`<option value="Vacuna">Vacuna</option><option value="Desparasitante">Desparasitante</option><option value="Vitamina">Vitamina / Min.</option><option value="Tratamiento">Tratamiento Médico</option>`:(cat==='Reproducción'?`<option value="Monta">Monta/Cruce</option><option value="Diag. Preñez (+)">Preñez (+)</option><option value="Diag. Preñez (-)">Preñez (-)</option><option value="Parto">Parto</option><option value="Secado">Secado</option>`:(cat==='Producción'?`<option value="Pesaje">Pesaje (Kg/Lb)</option><option value="Ordeño">Ordeño (Litros)</option>`:`<option value="Concentrado">Concentrado Especial</option><option value="Forraje">Forraje / Suplemento</option>`)); 
             
-            if(cat === 'Salud') { vc.classList.remove('hidden'); pc.classList.remove('hidden'); document.getElementById('ev-valor-label').innerText = 'Unidades Aplicadas'; }
+            if(cat === 'Salud' || cat === 'Alimentación') { vc.classList.remove('hidden'); pc.classList.remove('hidden'); document.getElementById('ev-valor-label').innerText = 'Unidades Aplicadas/Consumidas'; }
             if(cat === 'Reproducción') { vc.classList.add('hidden'); pc.classList.add('hidden'); }
             if(cat === 'Producción') { vc.classList.remove('hidden'); pc.classList.add('hidden'); document.getElementById('ev-valor-label').innerText = 'Valor (Peso / Litros)'; }
 
@@ -1636,22 +1762,66 @@
         
         async function renderEventosAnimal() { 
             let ev = (await dbGetAll('eventos')).filter(e=>e.animalId===currentAnimalId).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-            let inv = await dbGetAll('inventario'); let total=0; 
+            let inv = await dbGetAll('inventario'); 
+            const a = (await dbGetAll('animales')).find(x=>x.id===currentAnimalId); 
+
+            let total=0, costoSalud=0, costoAlim=0, costoOtros=0; 
             
             document.getElementById('list-historial').innerHTML=ev.map(e=>{ 
-                total+=(e.costo||0); const p = inv.find(i=>i.id===e.productoId); 
-                let pTag = p && e.categoria === 'Salud' ? `<span class="bg-blue-50 text-blue-700 px-1 rounded text-xs ml-2 border border-blue-200">${e.valor} ${p.unidad} de ${p.nombre}</span>` : '';
+                total+=(e.costo||0); 
+                if(e.categoria.includes('Salud')) costoSalud += (e.costo||0);
+                else if(e.categoria.includes('Alimentación')) costoAlim += (e.costo||0);
+                else costoOtros += (e.costo||0);
+
+                const p = inv.find(i=>i.id===e.productoId); 
+                let pTag = p && (e.categoria === 'Salud' || e.categoria === 'Alimentación') ? `<span class="bg-blue-50 text-blue-700 px-1 rounded text-xs ml-2 border border-blue-200">${e.valor} ${p.unidad} de ${p.nombre}</span>` : '';
                 let vTag = e.categoria === 'Producción' && e.valor ? `<span class="bg-orange-50 text-orange-700 px-1 rounded text-xs ml-2 border border-orange-200">Registrado: ${e.valor}</span>` : '';
 
-                return `<li class="relative pl-6"><span class="absolute -left-[5px] top-2 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></span><div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm"><div class="flex justify-between font-bold"><span>${e.tipo} ${pTag} ${vTag}</span><span class="text-gray-400 text-xs">${e.fecha}</span></div><p class="text-sm text-gray-600">${e.detalles||''}</p><div class="flex justify-between items-center"><p class="text-xs text-red-600 mt-1 font-bold">Costo Insumo: $${(e.costo||0).toFixed(2)}</p>${e.proxFecha ? `<span class="text-orange-500 text-xs font-bold"><i data-lucide="bell" class="inline w-3 h-3"></i> Próx: ${new Date(e.proxFecha).toLocaleDateString()}</span>` : ''}</div><button onclick="borrarEventoAnimal('${e.id}')" class="text-xs text-gray-400 hover:text-red-500 mt-2 block">Borrar Registro</button></div></li>`; 
+                return `<li class="relative pl-6"><span class="absolute -left-[5px] top-2 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></span><div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm"><div class="flex justify-between font-bold"><span>${e.tipo} ${pTag} ${vTag}</span><span class="text-gray-400 text-xs">${e.fecha}</span></div><p class="text-sm text-gray-600">${e.detalles||''}</p><div class="flex justify-between items-center"><p class="text-xs text-red-600 mt-1 font-bold">Insumo: $${(e.costo||0).toFixed(2)}</p>${e.proxFecha ? `<span class="text-orange-500 text-xs font-bold"><i data-lucide="bell" class="inline w-3 h-3"></i> Próx: ${new Date(e.proxFecha).toLocaleDateString()}</span>` : ''}</div><button onclick="borrarEventoAnimal('${e.id}')" class="text-xs text-gray-400 hover:text-red-500 mt-2 block">Borrar Registro</button></div></li>`; 
             }).join('') || '<p class="text-sm text-gray-500">Aún no hay registros médicos ni eventos en este historial.</p>'; 
             
+            // Render Detailed Costs
             document.getElementById('det-costo-total').innerText = `$${total.toFixed(2)}`; 
+            document.getElementById('det-costo-alim').innerText = `$${costoAlim.toFixed(2)}`; 
+            document.getElementById('det-costo-salud').innerText = `$${costoSalud.toFixed(2)}`; 
+            document.getElementById('det-costo-otros').innerText = `$${costoOtros.toFixed(2)}`; 
+
+            // Render GDP Logic (Engorde Projection)
+            const rendBox = document.getElementById('det-rendimiento-box');
+            if(a && (a.proposito === 'Carne' || a.estado === 'Engorde') && !isPet(a.especie)) {
+                let pesoIni = parseFloat(a.peso || 0);
+                let pesoActual = pesoIni;
+                let fechaIni = a.fechaNac || a.createdAt;
+                let fechaActual = fechaIni;
+
+                const pesajes = ev.filter(e => e.tipo === 'Pesaje').sort((x,y) => new Date(x.fecha) - new Date(y.fecha));
+                if(pesajes.length > 0) {
+                    pesoActual = parseFloat(pesajes[pesajes.length-1].valor || 0);
+                    fechaActual = pesajes[pesajes.length-1].fecha;
+                }
+
+                document.getElementById('det-peso-actual').innerText = `${pesoActual.toFixed(2)} Kg`;
+
+                let gdpStr = "0.00";
+                if(pesoActual > pesoIni && fechaIni && fechaActual && fechaActual !== fechaIni) {
+                    let diffDays = Math.ceil(Math.abs(new Date(fechaActual) - new Date(fechaIni)) / (1000 * 60 * 60 * 24));
+                    if(diffDays > 0) {
+                        gdpStr = ((pesoActual - pesoIni) / diffDays).toFixed(3);
+                    }
+                }
+                document.getElementById('det-gdp').innerText = `${gdpStr} Kg/día`;
+                rendBox.classList.remove('hidden');
+                rendBox.classList.add('flex');
+            } else {
+                rendBox.classList.add('hidden');
+                rendBox.classList.remove('flex');
+            }
+
             lucide.createIcons();
         }
 
         async function borrarEventoAnimal(id) {
-            if(confirm("¿Eliminar registro del historial?")) {
+            if(confirm("¿Eliminar registro del historial? (Los insumos no se devolverán a la bodega).")) {
                 await dbDelete('eventos', id); renderEventosAnimal();
             }
         }
