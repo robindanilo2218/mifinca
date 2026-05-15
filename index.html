@@ -355,6 +355,7 @@
                             <div>
                                 <h2 class="text-2xl font-bold text-gray-800" id="det-identificador">Arete 001</h2>
                                 <p class="text-gray-600 mt-1" id="det-sub">Vaca Holstein · Hembra</p>
+                                <p class="text-sm text-gray-500 mt-1">Nacimiento: <span id="det-fecha-nac" class="font-semibold text-gray-700">-</span></p>
                                 <div class="flex gap-4 mt-2 text-sm text-gray-500">
                                     <p><span class="font-semibold text-pink-600">Madre:</span> <span id="det-madre">-</span></p>
                                     <p><span class="font-semibold text-blue-600">Padre:</span> <span id="det-padre">-</span></p>
@@ -579,10 +580,11 @@
     <div id="modal-lote" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">Nuevo Lote o Zona</h3>
+                <h3 class="text-xl font-bold" id="lote-modal-title">Nuevo Lote o Zona</h3>
                 <button onclick="closeModal('modal-lote')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
             </div>
             <form onsubmit="saveLote(event)">
+                <input type="hidden" id="lote-id">
                 <div class="space-y-4">
                     <div><label class="block text-sm font-medium mb-1">Nombre (Lote, Potrero, o Zona de Casa)</label><input type="text" id="lote-nombre" required class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. Lote Engorde A, Perreras"></div>
                     <div><label class="block text-sm font-medium mb-1">Descripción</label><textarea id="lote-desc" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea></div>
@@ -725,9 +727,10 @@
                     
                     <div class="md:col-span-3 mt-2 border-t pt-2" id="div-genealogia">
                         <h4 class="text-sm font-bold text-gray-500 mb-2"><i data-lucide="git-merge" class="inline w-4 h-4"></i> Genealogía (Árbol Familiar)</h4>
+                        <datalist id="lista-animales"></datalist>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-sm font-medium mb-1 text-pink-700">Madre (ID/Nombre)</label><input type="text" id="an-madre" class="w-full px-3 py-2 border border-pink-200 rounded-lg bg-pink-50" placeholder="Opcional"></div>
-                            <div><label class="block text-sm font-medium mb-1 text-blue-700">Padre (ID/Nombre)</label><input type="text" id="an-padre" class="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50" placeholder="Opcional"></div>
+                            <div><label class="block text-sm font-medium mb-1 text-pink-700">Madre (ID/Nombre)</label><input type="text" id="an-madre" list="lista-animales" class="w-full px-3 py-2 border border-pink-200 rounded-lg bg-pink-50" placeholder="Ej. Vaca #12"></div>
+                            <div><label class="block text-sm font-medium mb-1 text-blue-700">Padre (ID/Nombre)</label><input type="text" id="an-padre" list="lista-animales" class="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50" placeholder="Ej. Toro Max"></div>
                         </div>
                     </div>
                     <div><label class="block text-sm font-medium mb-1">Peso Inicial (Kg)</label><input type="number" step="0.01" id="an-peso" class="w-full px-3 py-2 border rounded-lg"></div>
@@ -877,10 +880,40 @@
             }
         }
         
-        function abrirNuevoAnimal() {
+        async function abrirNuevoAnimal(loteId = null) {
             openModal('modal-animal');
+            document.getElementById('animal-modal-title').innerText = "Registrar Individuo";
             if(globalSpeciesFilter === 'Mascota') document.getElementById('an-especie').value = 'Perro';
             togglePetFields();
+            
+            // Cargar lista para autocompletar padres
+            const animales = await dbGetAll('animales');
+            document.getElementById('lista-animales').innerHTML = animales.map(a => `<option value="${a.arete} ${a.nombre ? `(${a.nombre})` : ''}"></option>`).join('');
+            
+            // Preseleccionar lote si se añadió desde la vista de Lotes
+            if(loteId) {
+                const lotes = await dbGetAll('lotes');
+                const sel = document.getElementById('an-lote');
+                sel.innerHTML = '<option value="">Sin Asignar</option>' + lotes.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
+                sel.value = loteId;
+            }
+        }
+
+        function abrirNuevoLote() { 
+            document.getElementById('lote-modal-title').innerText = "Nuevo Lote o Zona";
+            openModal('modal-lote'); 
+        }
+
+        async function editarLote(id) {
+            const lotes = await dbGetAll('lotes');
+            const lote = lotes.find(l => l.id === id);
+            if (lote) {
+                document.getElementById('lote-modal-title').innerText = "Editar Lote o Zona";
+                document.getElementById('lote-id').value = lote.id;
+                document.getElementById('lote-nombre').value = lote.nombre;
+                document.getElementById('lote-desc').value = lote.desc || '';
+                document.getElementById('modal-lote').classList.remove('hidden');
+            }
         }
 
         function abrirNuevoProducto() { openModal('modal-inventario'); }
@@ -1245,7 +1278,13 @@
         }
 
         // ================= ANIMALES Y MASCOTAS =================
-        async function saveLote(e) { e.preventDefault(); await dbAdd('lotes', { id: generateId(), nombre: document.getElementById('lote-nombre').value, desc: document.getElementById('lote-desc').value }); closeModal('modal-lote'); renderLotes(); }
+        async function saveLote(e) { 
+            e.preventDefault(); 
+            const id = document.getElementById('lote-id').value || generateId();
+            await dbAdd('lotes', { id: id, nombre: document.getElementById('lote-nombre').value, desc: document.getElementById('lote-desc').value }); 
+            closeModal('modal-lote'); 
+            renderLotes(); 
+        }
         
         async function renderLotes() { 
             const lotes = await dbGetAll('lotes'); let animales = await dbGetAll('animales'); 
@@ -1263,8 +1302,10 @@
                             <p class="text-sm text-gray-500 mb-4 line-clamp-2">${l.desc||'Sin descripción'}</p>
                         </div>
                         <div class="mt-auto border-t pt-3 flex flex-wrap gap-2">
+                            <button onclick="abrirNuevoAnimal('${l.id}')" class="text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded transition"><i data-lucide="plus" class="inline w-3 h-3"></i> Añadir</button>
                             <button onclick="document.getElementById('mas-lote-id').value='${l.id}'; openModal('modal-masivo')" class="text-xs font-semibold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded transition"><i data-lucide="copy-plus" class="inline w-3 h-3"></i> Generar</button>
                             <button onclick="document.getElementById('ev-mas-lote-id').value='${l.id}'; openModal('modal-evento-masivo')" class="text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded transition"><i data-lucide="activity" class="inline w-3 h-3"></i> Tratar Lote</button>
+                            <button onclick="editarLote('${l.id}')" class="text-xs font-semibold text-yellow-600 hover:bg-yellow-50 px-3 py-1.5 rounded transition"><i data-lucide="edit" class="inline w-3 h-3"></i> Editar</button>
                             <button onclick="borrarLote('${l.id}')" class="text-xs font-semibold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded transition"><i data-lucide="trash-2" class="inline w-3 h-3"></i> Borrar</button>
                         </div>
                     </div>`;
@@ -1351,7 +1392,7 @@
                 sexo: document.getElementById('an-sexo').value, proposito: document.getElementById('an-proposito').value, 
                 estado: document.getElementById('an-estado').value, loteId: document.getElementById('an-lote').value, 
                 madre: document.getElementById('an-madre').value, padre: document.getElementById('an-padre').value,
-                peso: document.getElementById('an-peso').value
+                peso: document.getElementById('an-peso').value, fechaNac: document.getElementById('an-fecha-nac').value
             }); 
             closeModal('modal-animal'); 
             if(currentView === 'animal-detalle') verDetalleAnimal(id); else renderAnimales(); 
@@ -1379,8 +1420,12 @@
         async function verDetalleAnimal(id) { 
             currentAnimalId = id; const a = (await dbGetAll('animales')).find(x=>x.id===id); 
             document.getElementById('det-identificador').innerText=a.arete + (a.nombre ? ` (${a.nombre})` : ''); 
-            document.getElementById('det-sub').innerText=a.especie; 
+            document.getElementById('det-sub').innerText=a.especie + (a.raza ? ` · ${a.raza}` : ''); 
             document.getElementById('det-estado-badge').innerText=a.estado; 
+            
+            const fNac = document.getElementById('det-fecha-nac');
+            if(fNac) fNac.innerText = a.fechaNac ? new Date(a.fechaNac).toLocaleDateString() : 'No Registrada';
+
             document.getElementById('animal-id').value=a.id; document.getElementById('an-arete').value=a.arete; 
             
             document.getElementById('det-madre').innerText = a.madre || 'No Registrada';
@@ -1411,10 +1456,18 @@
         
         function openEditAnimalModal() { 
             openModal('modal-animal'); 
+            document.getElementById('animal-modal-title').innerText = "Editar Individuo";
+            
+            // Cargar lista para autocompletar padres
+            dbGetAll('animales').then(animales => {
+                document.getElementById('lista-animales').innerHTML = animales.map(a => `<option value="${a.arete} ${a.nombre ? `(${a.nombre})` : ''}"></option>`).join('');
+            });
+
             const a = currentAnimalId; // the current details are filled in saveAnimal fetch logic, but we need to populate forms
             dbGetAll('animales').then(anims => {
                 const an = anims.find(x => x.id === a);
                 if(an) {
+                    document.getElementById('animal-id').value = an.id; // Esta es la línea clave que evita que se dupliquen
                     ['arete', 'nombre', 'especie', 'raza', 'sexo', 'proposito', 'estado', 'lote', 'madre', 'padre'].forEach(f => {
                         if(document.getElementById(`an-${f}`)) document.getElementById(`an-${f}`).value = an[f] || (f==='lote'?an.loteId:'');
                     });
