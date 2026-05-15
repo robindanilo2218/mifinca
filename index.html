@@ -156,8 +156,13 @@
             <section id="reportes" class="view-section">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
                     <p class="text-gray-600">Control global de gastos, crecimiento y proyección de ingresos.</p>
-                    <div class="bg-red-50 text-red-800 px-4 py-3 rounded-lg font-bold shadow-sm border border-red-200">
-                        Inversión / Gasto Acumulado: <span id="rep-gasto-total">$0.00</span>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="bg-red-50 text-red-800 px-4 py-3 rounded-lg font-bold shadow-sm border border-red-200">
+                            Inversión / Gasto: <span id="rep-gasto-total">$0.00</span>
+                        </div>
+                        <div class="bg-blue-50 text-blue-800 px-4 py-3 rounded-lg font-bold shadow-sm border border-blue-200">
+                            Ingreso por Ventas: <span id="rep-ingreso-ventas">$0.00</span>
+                        </div>
                     </div>
                 </div>
 
@@ -331,7 +336,7 @@
                 <div id="action-bar-animales" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center shadow-sm">
                     <span class="text-blue-800 font-bold text-sm"><span id="count-selected">0</span> individuos seleccionados</span>
                     <div class="flex gap-2">
-                        <button onclick="exportarSeleccionVenta()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded shadow-sm text-sm flex items-center gap-2 transition"><i data-lucide="share" class="w-4 h-4"></i> Exportar para Venta (.agr)</button>
+                        <button onclick="abrirModalVenta()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded shadow-sm text-sm flex items-center gap-2 transition"><i data-lucide="dollar-sign" class="w-4 h-4"></i> Cerrar Venta / Exportar</button>
                         <button onclick="limpiarSeleccion()" class="text-gray-500 hover:text-gray-700 px-2 py-1.5 text-sm transition">Cancelar</button>
                     </div>
                 </div>
@@ -828,6 +833,37 @@
         </div>
     </div>
 
+    <!-- Modal Cerrar Venta -->
+    <div id="modal-venta" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-blue-700">Cerrar Venta de Animales</h3>
+                <button onclick="closeModal('modal-venta')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="ejecutarVenta(event)">
+                <p class="text-sm text-gray-600 mb-4 bg-blue-50 p-3 rounded border border-blue-200">
+                    Estás a punto de vender <strong id="venta-qty">0</strong> animales. Se marcarán como "Vendidos" y saldrán de sus lotes actuales.
+                </p>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium mb-1">Fecha *</label><input type="date" id="venta-fecha" required class="w-full px-3 py-2 border rounded-lg"></div>
+                        <div><label class="block text-sm font-medium mb-1">Precio Total ($) *</label><input type="number" step="0.01" id="venta-precio" required class="w-full px-3 py-2 border rounded-lg"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Comprador / Cliente (Opcional)</label><input type="text" id="venta-cliente" class="w-full px-3 py-2 border rounded-lg" placeholder="Nombre o finca destino"></div>
+                    
+                    <div class="flex items-center gap-2 mt-4 p-3 bg-gray-50 border rounded-lg">
+                        <input type="checkbox" id="venta-exportar" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                        <label for="venta-exportar" class="text-sm font-medium text-gray-700">Descargar historial para el comprador (.agr)</label>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-venta')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md font-bold">Confirmar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Evento Individual -->
     <div id="modal-evento" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 modal-content">
@@ -1293,16 +1329,19 @@
                 }
             });
 
+            let ingresosVentas = 0;
             eventos.forEach(e => { 
                 if(e.costo > 0) { 
                     if(e.categoria.includes('Salud') || e.categoria.includes('Reproducción')) costoSalud += e.costo; 
                     else costoAlimento += e.costo; 
                 } 
                 if(e.tipo === 'Ordeño') lecheTotal += parseFloat(e.valor || 0);
+                if(e.tipo === 'Venta') ingresosVentas += parseFloat(e.valor || 0);
             });
             mants.forEach(m => { costoMaquinaria += (m.costoTotal || 0); });
 
             document.getElementById('rep-gasto-total').innerText = `$${(costoSalud + costoAlimento + costoMaquinaria).toFixed(2)}`;
+            document.getElementById('rep-ingreso-ventas').innerText = `$${ingresosVentas.toFixed(2)}`;
             
             window.currentPesoTotal = pesoTotalEngorde;
             window.currentLecheTotal = lecheTotal;
@@ -1404,8 +1443,10 @@
                 eventos = eventos.filter(e => validIds.has(e.animalId));
             }
 
-            document.getElementById('stat-total').innerText = animales.length;
-            document.getElementById('stat-lotes').innerText = new Set(animales.map(a => a.loteId).filter(Boolean)).size;
+            const animalesActivos = animales.filter(a => a.estado !== 'Vendido');
+
+            document.getElementById('stat-total').innerText = animalesActivos.length;
+            document.getElementById('stat-lotes').innerText = new Set(animalesActivos.map(a => a.loteId).filter(Boolean)).size;
             document.getElementById('stat-maquinas').innerText = (await dbGetAll('maquinaria')).length;
             
             const hoy = new Date(); const proxS = new Date(); proxS.setDate(hoy.getDate() + 7);
@@ -1610,21 +1651,60 @@
             actualizarBarraSeleccion();
         }
 
-        async function exportarSeleccionVenta() {
+        function abrirModalVenta() {
             if(selectedAnimals.size === 0) return;
+            document.getElementById('venta-qty').innerText = selectedAnimals.size;
+            document.getElementById('venta-fecha').valueAsDate = new Date();
+            openModal('modal-venta');
+        }
+
+        async function ejecutarVenta(e) {
+            e.preventDefault();
+            const fecha = document.getElementById('venta-fecha').value;
+            const cliente = document.getElementById('venta-cliente').value;
+            const precioTotal = parseFloat(document.getElementById('venta-precio').value || 0);
+            const exportar = document.getElementById('venta-exportar').checked;
+
             const animales = await dbGetAll('animales');
             const eventos = await dbGetAll('eventos');
 
             const exportAnims = animales.filter(a => selectedAnimals.has(a.id));
-            const exportEvts = eventos.filter(e => selectedAnimals.has(e.animalId));
+            const exportEvts = eventos.filter(ev => selectedAnimals.has(ev.animalId));
 
-            const data = { version: 3, type: 'venta', date: new Date().toISOString(), animales: exportAnims, eventos: exportEvts };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
-            a.download = `Venta_Animales_${new Date().toISOString().split('T')[0]}.agr`; 
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            if(exportar) {
+                const data = { version: 3, type: 'venta', date: new Date().toISOString(), animales: exportAnims, eventos: exportEvts };
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+                a.download = `Venta_${cliente ? cliente.replace(/\s+/g, '_') : 'Ganado'}_${fecha}.agr`; 
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            }
 
+            const precioPorAnimal = precioTotal / exportAnims.length;
+            
+            for(let a of exportAnims) {
+                a.estado = 'Vendido';
+                a.loteId = ''; 
+                await dbAdd('animales', a);
+
+                await dbAdd('eventos', {
+                    id: generateId(),
+                    animalId: a.id,
+                    categoria: 'Producción', 
+                    tipo: 'Venta',
+                    valor: precioPorAnimal,
+                    costo: 0, // 0 porque es ingreso, no un costo
+                    fecha: fecha,
+                    detalles: `Vendido a: ${cliente || 'Desconocido'}. Ingreso registrado por $${precioPorAnimal.toFixed(2)}`,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            closeModal('modal-venta');
             limpiarSeleccion();
+            renderAnimales();
+            renderDashboard();
+            renderLotes();
+            alert('¡Venta registrada y cerrada con éxito!');
         }
         // ----------------------------------
 
@@ -1637,10 +1717,20 @@
             else if(globalSpeciesFilter) an = an.filter(a => a.especie === globalSpeciesFilter); 
             
             const tb = document.getElementById('animales-list'); tb.innerHTML=''; 
-            an.filter(a=>(a.arete.toLowerCase().includes(search) || (a.nombre||'').toLowerCase().includes(search))).slice(0,200).forEach(a => { 
+            an.filter(a=>{
+                const lName = lotes.find(l => l.id === a.loteId)?.nombre || 'Sin Zona';
+                return a.arete.toLowerCase().includes(search) || 
+                       (a.nombre||'').toLowerCase().includes(search) ||
+                       lName.toLowerCase().includes(search) ||
+                       a.estado.toLowerCase().includes(search);
+            }).slice(0,200).forEach(a => { 
                 const lName = lotes.find(l => l.id === a.loteId)?.nombre || 'Sin Zona';
                 const isChecked = selectedAnimals.has(a.id) ? 'checked' : '';
-                tb.innerHTML+=`<tr class="hover:bg-gray-50 border-b transition"><td class="p-3 w-10"><input type="checkbox" value="${a.id}" class="animal-checkbox rounded text-green-600 focus:ring-green-500" ${isChecked} onchange="toggleAnimalSelection('${a.id}', this.checked)"></td><td class="p-3 font-bold cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${a.arete} <span class="font-normal text-xs block text-gray-500">${a.nombre||''}</span></td><td class="p-3 text-xs text-gray-500 cursor-pointer" onclick="verDetalleAnimal('${a.id}')">M:${a.madre||'-'}<br>P:${a.padre||'-'}</td><td class="p-3 text-xs cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${a.especie} - ${a.raza||'S/R'}</td><td class="p-3 text-xs cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${lName}</td><td class="p-3 cursor-pointer" onclick="verDetalleAnimal('${a.id}')"><span class="px-2 border rounded text-xs font-bold">${a.estado}</span></td><td class="p-3 text-center cursor-pointer" onclick="verDetalleAnimal('${a.id}')"><button class="text-green-600"><i data-lucide="folder-open" class="w-5 h-5"></i></button></td></tr>`; 
+                
+                let estadoClass = "";
+                if(a.estado === 'Vendido') estadoClass = "bg-gray-200 text-gray-500 line-through";
+                
+                tb.innerHTML+=`<tr class="hover:bg-gray-50 border-b transition ${a.estado === 'Vendido' ? 'opacity-60' : ''}"><td class="p-3 w-10"><input type="checkbox" value="${a.id}" class="animal-checkbox rounded text-green-600 focus:ring-green-500" ${isChecked} onchange="toggleAnimalSelection('${a.id}', this.checked)"></td><td class="p-3 font-bold cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${a.arete} <span class="font-normal text-xs block text-gray-500">${a.nombre||''}</span></td><td class="p-3 text-xs text-gray-500 cursor-pointer" onclick="verDetalleAnimal('${a.id}')">M:${a.madre||'-'}<br>P:${a.padre||'-'}</td><td class="p-3 text-xs cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${a.especie} - ${a.raza||'S/R'}</td><td class="p-3 text-xs cursor-pointer" onclick="verDetalleAnimal('${a.id}')">${lName}</td><td class="p-3 cursor-pointer" onclick="verDetalleAnimal('${a.id}')"><span class="px-2 border rounded text-xs font-bold ${estadoClass}">${a.estado}</span></td><td class="p-3 text-center cursor-pointer" onclick="verDetalleAnimal('${a.id}')"><button class="text-green-600"><i data-lucide="folder-open" class="w-5 h-5"></i></button></td></tr>`; 
             }); 
             
             const sel = document.getElementById('an-lote');
