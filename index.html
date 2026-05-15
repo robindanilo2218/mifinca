@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Ganadería Pro - ERP Finca & Mascotas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #16a34a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #15803d; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        .tab-btn.active { border-bottom: 2px solid #16a34a; color: #16a34a; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden font-sans">
+
+    <!-- Sidebar Mobile Overlay -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-green-900 text-white w-64 flex-shrink-0 fixed lg:static inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 h-full shadow-2xl flex flex-col">
+        <div class="p-6 flex items-center justify-between border-b border-green-800">
+            <h1 class="text-2xl font-bold flex items-center gap-2 text-green-400">
+                <i data-lucide="tractor"></i> AgroTrack<span class="text-xs text-white bg-green-600 px-2 py-1 rounded">ERP</span>
+            </h1>
+            <button class="lg:hidden text-white hover:text-green-300" onclick="toggleSidebar()">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <a href="#" onclick="navigate('dashboard')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 bg-green-800 border-l-4 border-green-400 transition-colors" data-target="dashboard">
+                <i data-lucide="layout-dashboard"></i> Panel Principal
+            </a>
+            <a href="#" onclick="navigate('lotes')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors" data-target="lotes">
+                <i data-lucide="layers"></i> Lotes / Potreros
+            </a>
+            <a href="#" onclick="navigate('animales')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors" data-target="animales">
+                <i data-lucide="paw-print"></i> Mi Ganado
+            </a>
+            <a href="#" onclick="navigateMascotas()" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors" data-target="mascotas">
+                <i data-lucide="dog"></i> Mis Mascotas
+            </a>
+            <a href="#" onclick="navigate('maquinaria')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors" data-target="maquinaria">
+                <i data-lucide="truck"></i> Maquinaria & Vehículos
+            </a>
+            <a href="#" onclick="navigate('inventario')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors" data-target="inventario">
+                <i data-lucide="package"></i> Inventario
+            </a>
+            <a href="#" onclick="navigate('reportes')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors text-yellow-300" data-target="reportes">
+                <i data-lucide="pie-chart"></i> Reportes & Finanzas
+            </a>
+            <a href="#" onclick="navigate('calendario')" class="nav-link flex items-center gap-3 py-3 px-6 hover:bg-green-800 border-l-4 border-transparent transition-colors" data-target="calendario">
+                <i data-lucide="calendar-days"></i> Calendario / Tareas
+            </a>
+        </nav>
+        <div class="p-6 text-sm text-green-300 border-t border-green-800 bg-green-950">
+            <p>Modo Offline Activo <i data-lucide="wifi-off" class="inline w-4 h-4 ml-1 text-green-400"></i></p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50">
+        <!-- Topbar -->
+        <header class="bg-white shadow-sm py-3 px-6 flex items-center justify-between z-10 sticky top-0">
+            <div class="flex items-center gap-4">
+                <button class="lg:hidden text-gray-600 hover:text-green-600" onclick="toggleSidebar()">
+                    <i data-lucide="menu"></i>
+                </button>
+                <h2 id="view-title" class="text-xl font-bold text-gray-800 hidden sm:block">Panel Principal</h2>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- Global Species Filter -->
+                <div class="flex items-center bg-green-50 border border-green-200 rounded-lg px-2 py-1">
+                    <i data-lucide="filter" class="w-4 h-4 text-green-600 mr-2"></i>
+                    <select id="global-species" onchange="updateGlobalFilter()" class="bg-transparent font-medium text-green-800 focus:outline-none text-sm">
+                        <option value="">Todo (Finca & Mascotas)</option>
+                        <optgroup label="Ganadería">
+                            <option value="Bovino">Bovinos</option>
+                            <option value="Caprino">Caprinos</option>
+                            <option value="Porcino">Porcinos</option>
+                            <option value="Ovino">Ovinos</option>
+                            <option value="Equino">Equinos</option>
+                        </optgroup>
+                        <optgroup label="Hogar / Seguridad">
+                            <option value="Mascota">Todas las Mascotas</option>
+                            <option value="Perro">Perros</option>
+                            <option value="Gato">Gatos</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <!-- Import/Export Buttons -->
+                <input type="file" id="import-file" accept=".agr,.json" class="hidden" onchange="handleImport(event)">
+                <button onclick="triggerImport()" class="text-sm bg-white border border-gray-200 hover:bg-gray-50 text-blue-700 py-2 px-3 rounded-lg flex items-center gap-2 transition shadow-sm hidden lg:flex" title="Restaurar datos desde archivo">
+                    <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i> Recuperar
+                </button>
+                <button onclick="exportData()" class="text-sm bg-gray-800 hover:bg-gray-900 text-white py-2 px-3 rounded-lg flex items-center gap-2 transition shadow-sm hidden md:flex" title="Guardar copia local">
+                    <i data-lucide="save" class="w-4 h-4 text-green-400"></i> Guardar (.agr)
+                </button>
+            </div>
+        </header>
+
+        <!-- Views Container -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+            
+            <!-- VISTA: DASHBOARD -->
+            <section id="dashboard" class="view-section active">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                        <p class="text-sm text-gray-500 mb-1">Total Animales/Mascotas</p>
+                        <h3 id="stat-total" class="text-3xl font-bold text-gray-800">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                        <p class="text-sm text-gray-500 mb-1">Lotes Activos</p>
+                        <h3 id="stat-lotes" class="text-3xl font-bold text-green-600">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                        <p class="text-sm text-gray-500 mb-1">Equipos Operativos</p>
+                        <h3 id="stat-maquinas" class="text-3xl font-bold text-blue-600">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                        <p class="text-sm text-gray-500 mb-1">Eventos Próx 7 Días</p>
+                        <h3 id="stat-eventos" class="text-3xl font-bold text-orange-500">0</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm col-span-1 lg:col-span-2">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="layers" class="w-5 h-5 text-gray-500"></i> Distribución por Lotes / Áreas</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="text-gray-500 border-b">
+                                        <th class="pb-2">Lote / Zona</th>
+                                        <th class="pb-2">Cantidad</th>
+                                        <th class="pb-2">Propósito Principal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-lotes-list" class="divide-y divide-gray-50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="fingerprint" class="w-5 h-5 text-gray-500"></i> Tipos / Razas</h3>
+                        <ul id="dash-razas-list" class="space-y-3"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: REPORTES Y FINANZAS -->
+            <section id="reportes" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-gray-600">Visión global de gastos de la finca (Animales + Maquinaria).</p>
+                    <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-bold shadow-sm">
+                        Gasto Histórico Total: <span id="rep-gasto-total">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h3 class="font-bold text-gray-800 mb-4 text-center">Distribución de Gastos por Categoría</h3>
+                        <div class="relative h-64 w-full flex justify-center">
+                            <canvas id="chartCategorias"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h3 class="font-bold text-gray-800 mb-4 text-center">Gastos Operativos (Últimos 6 Meses)</h3>
+                        <div class="relative h-64 w-full flex justify-center">
+                            <canvas id="chartMensual"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: MAQUINARIA -->
+            <section id="maquinaria" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-gray-600">Control de tractores, vehículos, y equipos de la finca.</p>
+                    <button onclick="openModal('modal-maquinaria')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Registrar Equipo
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="maquinaria-list">
+                    <!-- JS -->
+                </div>
+            </section>
+
+            <!-- VISTA: DETALLE MAQUINARIA -->
+            <section id="maquina-detalle" class="view-section">
+                <button onclick="navigate('maquinaria')" class="text-blue-700 hover:text-blue-900 flex items-center gap-2 mb-4 font-semibold">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a Maquinaria
+                </button>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                    <div class="p-6 sm:flex items-start justify-between border-b bg-gradient-to-r from-blue-50 to-white">
+                        <div class="flex items-center gap-4 mb-4 sm:mb-0">
+                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm border-2 border-blue-100">
+                                <i data-lucide="truck" class="w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800" id="det-maq-nombre">Tractor JD</h2>
+                                <p class="text-gray-600 mt-1" id="det-maq-sub">Tractor · John Deere · Placa: 1234</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <button onclick="openModal('modal-maquinaria', currentMaquinaId)" class="bg-white border shadow-sm text-gray-600 hover:bg-gray-50 py-1 px-3 rounded-lg flex items-center gap-1"><i data-lucide="edit" class="w-4 h-4"></i> Editar</button>
+                            <div class="mt-2 text-sm bg-red-50 text-red-800 px-3 py-1 rounded-lg border border-red-100">
+                                Gasto Acumulado: <strong id="det-maq-costo">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-b bg-gray-50">
+                        <button onclick="openMantenimientoModal()" class="bg-white border-blue-200 border text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="wrench" class="w-4 h-4"></i> Registrar Mantenimiento / Combustible</button>
+                    </div>
+                    
+                    <div class="p-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800 border-b pb-2">Bitácora de Mantenimiento</h3>
+                        <ul id="list-mantenimientos" class="space-y-4 relative border-l-2 border-blue-200 ml-3 pl-4"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: INVENTARIO -->
+            <section id="inventario" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-gray-600">Controla vacunas, alimentos, insumos y repuestos.</p>
+                    <button onclick="openModal('modal-inventario')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir Producto
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-600 text-sm border-b">
+                                <th class="py-3 px-4 font-semibold">Producto</th>
+                                <th class="py-3 px-4 font-semibold">Categoría</th>
+                                <th class="py-3 px-4 font-semibold">Stock Actual</th>
+                                <th class="py-3 px-4 font-semibold">Costo Unitario</th>
+                                <th class="py-3 px-4 font-semibold text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventario-list" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VISTA: LOTES -->
+            <section id="lotes" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-gray-600">Administración de grupos. Aplica acciones masivas a todo un lote o zona.</p>
+                    <button onclick="openModal('modal-lote')" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Lote/Zona
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="lotes-list">
+                    <!-- JS -->
+                </div>
+            </section>
+
+            <!-- VISTA: ANIMALES (SIRVE PARA MASCOTAS TAMBIÉN) -->
+            <section id="animales" class="view-section">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div class="flex flex-1 gap-2 w-full">
+                        <div class="relative flex-1 max-w-md">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                            <input type="text" id="search-animal" placeholder="Buscar por ID, Nombre, Raza..." class="pl-9 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm" onkeyup="renderAnimales()">
+                        </div>
+                    </div>
+                    <button onclick="openModal('modal-animal')" class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-sm font-medium w-full md:w-auto justify-center">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Registrar Individuo
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-600 border-b">
+                                <th class="py-3 px-4 font-semibold">ID / Nombre</th>
+                                <th class="py-3 px-4 font-semibold">Genealogía (M/P)</th>
+                                <th class="py-3 px-4 font-semibold">Especie / Raza</th>
+                                <th class="py-3 px-4 font-semibold">Lote / Zona</th>
+                                <th class="py-3 px-4 font-semibold">Estado</th>
+                                <th class="py-3 px-4 font-semibold text-center">Ficha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="animales-list" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                    <div id="animales-limit-msg" class="p-4 text-center text-sm text-gray-500 hidden bg-gray-50 border-t">
+                        Mostrando los primeros 200 resultados. Usa el buscador para encontrar individuos específicos.
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: DETALLE ANIMAL / MASCOTA -->
+            <section id="animal-detalle" class="view-section">
+                <button onclick="navigate(globalSpeciesFilter === 'Mascota' ? 'mascotas' : 'animales')" class="text-green-700 hover:text-green-900 flex items-center gap-2 mb-4 font-semibold">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a la lista
+                </button>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                    <div class="p-6 sm:flex items-start justify-between border-b bg-gradient-to-r from-green-50 to-white">
+                        <div class="flex items-center gap-4 mb-4 sm:mb-0">
+                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-600 shadow-sm border-2 border-green-100">
+                                <i data-lucide="paw-print" id="det-icon" class="w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800" id="det-identificador">Arete 001</h2>
+                                <p class="text-gray-600 mt-1" id="det-sub">Vaca Holstein · Hembra</p>
+                                <div class="flex gap-4 mt-2 text-sm text-gray-500">
+                                    <p><span class="font-semibold text-pink-600">Madre:</span> <span id="det-madre">-</span></p>
+                                    <p><span class="font-semibold text-blue-600">Padre:</span> <span id="det-padre">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <div class="flex gap-2">
+                                <span id="det-estado-badge" class="px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-800 border border-green-200">Lactando</span>
+                                <button onclick="openEditAnimalModal()" class="bg-white border shadow-sm text-gray-600 hover:bg-gray-50 py-1 px-3 rounded-lg flex items-center gap-1"><i data-lucide="edit" class="w-4 h-4"></i> Editar</button>
+                            </div>
+                            <div class="mt-2 text-sm bg-blue-50 text-blue-800 px-3 py-1 rounded-lg border border-blue-100">
+                                Inversión Acumulada: <strong id="det-costo-total">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-b bg-gray-50">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="openEventModal('Salud')" class="bg-white border-blue-200 border text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="syringe" class="w-4 h-4"></i> Aplicar Tratamiento/Vacuna</button>
+                            <button onclick="openEventModal('Reproducción')" class="bg-white border-pink-200 border text-pink-700 hover:bg-pink-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="heart" class="w-4 h-4"></i> Registro Reproductivo</button>
+                            <button onclick="openEventModal('Producción')" class="bg-white border-orange-200 border text-orange-700 hover:bg-orange-50 px-4 py-2 rounded-lg text-sm flex items-center gap-2 font-medium shadow-sm"><i data-lucide="scale" class="w-4 h-4"></i> Pesaje / Control</button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800 border-b pb-2">Historial Completo</h3>
+                        <ul id="list-historial" class="space-y-4 relative border-l-2 border-gray-200 ml-3 pl-4"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: CALENDARIO / TAREAS -->
+            <section id="calendario" class="view-section">
+                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold mb-2">Próximas Tareas y Recordatorios</h3>
+                    <p class="text-sm text-gray-500 mb-6">Alertas de revacunaciones, mantenimientos de tractores, secados o partos.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 border-b">
+                                    <th class="py-3 px-4 font-semibold">Fecha Programada</th>
+                                    <th class="py-3 px-4 font-semibold">Sujeto / Vehículo</th>
+                                    <th class="py-3 px-4 font-semibold">Tipo de Tarea</th>
+                                    <th class="py-3 px-4 font-semibold">Exportar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tareas-list" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                 </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+    
+    <!-- Modal Inventario -->
+    <div id="modal-inventario" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Registrar Producto</h3>
+                <button onclick="closeModal('modal-inventario')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="saveInventario(event)">
+                <input type="hidden" id="inv-id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nombre del Producto *</label>
+                        <input type="text" id="inv-nombre" required class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. Diésel, Llanta, Vacuna Rabia">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Categoría *</label>
+                        <select id="inv-categoria" required class="w-full px-3 py-2 border rounded-lg">
+                            <option value="Medicina/Vacuna">Medicina / Vacuna</option>
+                            <option value="Vitaminas/Minerales">Vitaminas / Minerales</option>
+                            <option value="Alimento/Nutrición">Alimento / Nutrición</option>
+                            <option value="Combustible/Lubricante">Combustible / Lubricante</option>
+                            <option value="Repuestos/Maquinaria">Repuestos / Maquinaria</option>
+                            <option value="Herramientas/Otros">Herramientas / Otros</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Costo Unitario ($) *</label>
+                            <input type="number" step="0.01" id="inv-costo" required class="w-full px-3 py-2 border rounded-lg" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Cantidad Inicial</label>
+                            <input type="number" step="0.01" id="inv-stock" class="w-full px-3 py-2 border rounded-lg" placeholder="0">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Unidad de Medida</label>
+                        <select id="inv-unidad" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="Dosis">Dosis / Aplicaciones</option>
+                            <option value="Galones">Galones / Litros</option>
+                            <option value="Kg">Kilogramos (Kg) / Libras</option>
+                            <option value="Sacos">Sacos / Quintales</option>
+                            <option value="Unidad">Unidad (Cajas/Llantas)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-inventario')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Maquinaria -->
+    <div id="modal-maquinaria" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Registrar Equipo/Vehículo</h3>
+                <button onclick="closeModal('modal-maquinaria')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="saveMaquinaria(event)">
+                <input type="hidden" id="maq-id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nombre / Alias *</label>
+                        <input type="text" id="maq-nombre" required class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. Tractor Verde Principal">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Tipo *</label>
+                            <select id="maq-tipo" required class="w-full px-3 py-2 border rounded-lg">
+                                <option value="Tractor">Tractor</option>
+                                <option value="Camión/Pickup">Camión / Pickup</option>
+                                <option value="Generador">Generador / Planta</option>
+                                <option value="Moto">Motocicleta</option>
+                                <option value="Otro">Otro Equipo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Marca / Modelo</label>
+                            <input type="text" id="maq-marca" class="w-full px-3 py-2 border rounded-lg" placeholder="John Deere, Toyota...">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Placa / Serial</label>
+                            <input type="text" id="maq-placa" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Año</label>
+                            <input type="number" id="maq-ano" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-maquinaria')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar Equipo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Mantenimiento Maquinaria -->
+    <div id="modal-mantenimiento" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Bitácora de Vehículo</h3>
+                <button onclick="closeModal('modal-mantenimiento')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="saveMantenimiento(event)">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium mb-1">Fecha *</label><input type="date" id="mt-fecha" required class="w-full px-3 py-2 border rounded-lg"></div>
+                        <div><label class="block text-sm font-medium mb-1">Próximo (Alerta)</label><input type="date" id="mt-prox" class="w-full px-3 py-2 border rounded-lg"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Tipo de Actividad *</label>
+                        <select id="mt-tipo" required class="w-full px-3 py-2 border rounded-lg">
+                            <option value="Combustible">Carga de Combustible</option>
+                            <option value="Cambio de Aceite">Cambio de Aceite</option>
+                            <option value="Cambio Llantas">Cambio de Llantas</option>
+                            <option value="Mantenimiento Preventivo">Mantenimiento Preventivo (Filtros, etc)</option>
+                            <option value="Reparación Correctiva">Reparación / Falla</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Producto del Inventario</label>
+                        <select id="mt-producto" class="w-full px-3 py-2 border rounded-lg bg-blue-50"><option value="">-- Ninguno / Gasto Externo --</option></select>
+                        <p class="text-xs text-gray-500 mt-1">Si seleccionas combustible o repuesto, se descontará del inventario.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1" id="lbl-mt-costo">Cantidad Utilizada *</label>
+                            <input type="number" step="0.01" id="mt-cantidad" required class="w-full px-3 py-2 border rounded-lg" value="1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-red-600" title="Costo si no se usa inventario">Costo Extra ($)</label>
+                            <input type="number" step="0.01" id="mt-costo-manual" class="w-full px-3 py-2 border border-red-200 rounded-lg" value="0" placeholder="Mano de obra, etc">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Kilometraje u Horómetro Actual</label>
+                        <input type="number" step="0.1" id="mt-km" class="w-full px-3 py-2 border rounded-lg" placeholder="15000">
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Detalles de Taller / Recibo</label><textarea id="mt-detalles" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea></div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-mantenimiento')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Guardar Mantenimiento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lote / Zona -->
+    <div id="modal-lote" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Nuevo Lote o Zona</h3>
+                <button onclick="closeModal('modal-lote')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="saveLote(event)">
+                <div class="space-y-4">
+                    <div><label class="block text-sm font-medium mb-1">Nombre (Lote, Potrero, o Zona de Casa)</label><input type="text" id="lote-nombre" required class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. Lote Engorde A, Perreras"></div>
+                    <div><label class="block text-sm font-medium mb-1">Descripción</label><textarea id="lote-desc" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea></div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-lote')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Guardar Lote/Zona</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Generación Masiva -->
+    <div id="modal-masivo" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-green-700">Creación Masiva</h3>
+                <button onclick="closeModal('modal-masivo')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="generarMasivo(event)">
+                <input type="hidden" id="mas-lote-id">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div><label class="block text-sm font-medium mb-1">Prefijo (Opcional)</label><input type="text" id="mas-prefijo" class="w-full px-3 py-2 border rounded-lg" placeholder="Ej. L1-"></div>
+                    <div><label class="block text-sm font-medium mb-1">Número Inicial *</label><input type="number" id="mas-inicio" required min="1" class="w-full px-3 py-2 border rounded-lg"></div>
+                    <div><label class="block text-sm font-medium mb-1">Número Final *</label><input type="number" id="mas-fin" required min="1" class="w-full px-3 py-2 border rounded-lg"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Especie *</label>
+                        <select id="mas-especie" required class="w-full px-3 py-2 border rounded-lg">
+                            <option value="Bovino">Bovino</option><option value="Caprino">Caprino</option>
+                            <option value="Porcino">Porcino</option><option value="Ovino">Ovino</option>
+                            <option value="Perro">Perro (Mascota)</option><option value="Gato">Gato (Mascota)</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Raza (General)</label><input type="text" id="mas-raza" class="w-full px-3 py-2 border rounded-lg"></div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Sexo Predominante</label>
+                        <select id="mas-sexo" class="w-full px-3 py-2 border rounded-lg"><option value="Desconocido">Mixto / Por definir</option><option value="Hembra">Hembra</option><option value="Macho">Macho</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Propósito / Estado</label>
+                        <select id="mas-estado" required class="w-full px-3 py-2 border rounded-lg">
+                            <option value="Engorde">Engorde</option><option value="Crecimiento">Crecimiento / Levante</option><option value="Mascota">Compañía / Mascota</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-masivo')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md font-bold">Generar Automáticamente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Evento/Tratamiento Masivo -->
+    <div id="modal-evento-masivo" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-blue-700">Tratamiento por Lote / Zona</h3>
+                <button onclick="closeModal('modal-evento-masivo')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="saveEventoMasivo(event)">
+                <input type="hidden" id="ev-mas-lote-id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Tipo de Acción *</label>
+                        <select id="ev-mas-tipo" required class="w-full px-3 py-2 border rounded-lg">
+                            <option value="Vacunación">Vacunación General</option>
+                            <option value="Desparasitación">Desparasitación</option>
+                            <option value="Alimentación">Suministro de Alimento</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Fecha *</label><input type="date" id="ev-mas-fecha" required class="w-full px-3 py-2 border rounded-lg"></div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Producto del Inventario (Opcional)</label>
+                        <select id="ev-mas-producto" class="w-full px-3 py-2 border rounded-lg"><option value="">-- Ninguno --</option></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium mb-1">Dosis por Individuo</label><input type="number" step="0.01" id="ev-mas-dosis" class="w-full px-3 py-2 border rounded-lg" value="1"></div>
+                        <div><label class="block text-sm font-medium mb-1">Próxima Fecha</label><input type="date" id="ev-mas-prox" class="w-full px-3 py-2 border rounded-lg"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Detalles</label><textarea id="ev-mas-det" rows="1" class="w-full px-3 py-2 border rounded-lg"></textarea></div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-evento-masivo')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md font-bold">Aplicar a Lote</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Animal/Mascota Individual -->
+    <div id="modal-animal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 max-h-[95vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="animal-modal-title">Registrar Individuo</h3>
+                <button onclick="closeModal('modal-animal')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="saveAnimal(event)">
+                <input type="hidden" id="animal-id">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label class="block text-sm font-medium mb-1">ID / Arete / Nombre *</label><input type="text" id="an-arete" required class="w-full px-3 py-2 border rounded-lg bg-green-50" placeholder="Ej. Firulais o Vaca #1"></div>
+                    <div><label class="block text-sm font-medium mb-1">Alias (Opcional)</label><input type="text" id="an-nombre" class="w-full px-3 py-2 border rounded-lg"></div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Especie *</label>
+                        <select id="an-especie" required class="w-full px-3 py-2 border rounded-lg">
+                            <optgroup label="Ganadería">
+                                <option value="Bovino">Bovino</option><option value="Caprino">Caprino</option><option value="Porcino">Porcino</option><option value="Ovino">Ovino</option><option value="Equino">Equino</option>
+                            </optgroup>
+                            <optgroup label="Mascotas">
+                                <option value="Perro">Perro</option><option value="Gato">Gato</option><option value="Ave">Ave / Otro</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Raza</label><input type="text" id="an-raza" class="w-full px-3 py-2 border rounded-lg"></div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Sexo *</label>
+                        <select id="an-sexo" required class="w-full px-3 py-2 border rounded-lg"><option value="Hembra">Hembra</option><option value="Macho">Macho</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Propósito</label>
+                        <select id="an-proposito" class="w-full px-3 py-2 border rounded-lg"><option value="Leche">Leche</option><option value="Carne">Engorde / Carne</option><option value="Cría">Cría</option><option value="Compañía">Compañía / Guardia</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Estado *</label>
+                        <select id="an-estado" required class="w-full px-3 py-2 border rounded-lg">
+                            <option value="Activo">Activo (Mascota/General)</option><option value="Crecimiento">Crecimiento / Cría</option><option value="Engorde">En Engorde</option><option value="Vacía">Vacía</option>
+                            <option value="Preñada">Preñada / Gestante</option><option value="Lactando">Lactando</option><option value="Semental">Semental</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Lote / Zona</label>
+                        <select id="an-lote" class="w-full px-3 py-2 border rounded-lg"><option value="">Sin Asignar</option></select>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Nacimiento (Aprox)</label><input type="date" id="an-fecha-nac" class="w-full px-3 py-2 border rounded-lg"></div>
+                    
+                    <div class="md:col-span-3 mt-2 border-t pt-2"><h4 class="text-sm font-bold text-gray-500 mb-2"><i data-lucide="git-merge" class="inline w-4 h-4"></i> Genealogía (Árbol Familiar)</h4></div>
+                    <div><label class="block text-sm font-medium mb-1 text-pink-700">Madre (ID/Nombre)</label><input type="text" id="an-madre" class="w-full px-3 py-2 border border-pink-200 rounded-lg bg-pink-50" placeholder="Opcional"></div>
+                    <div><label class="block text-sm font-medium mb-1 text-blue-700">Padre (ID/Nombre)</label><input type="text" id="an-padre" class="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50" placeholder="Opcional"></div>
+                    <div><label class="block text-sm font-medium mb-1">Peso Inicial (Kg)</label><input type="number" step="0.01" id="an-peso" class="w-full px-3 py-2 border rounded-lg"></div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-animal')" class="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg font-bold">Guardar Individuo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Evento Individual -->
+    <div id="modal-evento" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="evento-title">Añadir Registro</h3>
+                <button onclick="closeModal('modal-evento')" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="saveEvento(event)">
+                <input type="hidden" id="ev-categoria">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium mb-1">Fecha *</label><input type="date" id="ev-fecha" required class="w-full px-3 py-2 border rounded-lg"></div>
+                        <div><label class="block text-sm font-medium mb-1">Próxima / Alerta</label><input type="date" id="ev-prox-fecha" class="w-full px-3 py-2 border rounded-lg"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Tipo *</label><select id="ev-tipo" required class="w-full px-3 py-2 border rounded-lg"></select></div>
+                    <div id="ev-producto-container">
+                        <label class="block text-sm font-medium mb-1">Insumo Utilizado</label>
+                        <select id="ev-producto" class="w-full px-3 py-2 border rounded-lg bg-blue-50 border-blue-200 text-blue-900"><option value="">-- Ninguno --</option></select>
+                    </div>
+                    <div id="ev-valor-container" class="hidden">
+                        <label class="block text-sm font-medium mb-1" id="ev-valor-label">Valor/Cantidad</label>
+                        <input type="number" step="0.01" id="ev-valor" class="w-full px-3 py-2 border rounded-lg" value="1">
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Detalles Adicionales</label><textarea id="ev-detalles" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea></div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-evento')" class="px-4 py-2 text-gray-600 border rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg font-bold">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        lucide.createIcons();
+
+        // ================= STATE & NAVIGATION =================
+        let currentAnimalId = null;
+        let currentMaquinaId = null;
+        let globalSpeciesFilter = ""; // "" = All
+        let currentView = 'dashboard';
+        let chartCats = null;
+        let chartMensual = null;
+
+        const isPet = (especie) => ['Perro', 'Gato', 'Ave', 'Mascota'].includes(especie);
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('mobile-overlay').classList.toggle('hidden');
+        }
+
+        function updateGlobalFilter() {
+            globalSpeciesFilter = document.getElementById('global-species').value;
+            navigate(currentView === 'mascotas' ? 'animales' : currentView);
+        }
+
+        // Acceso directo a Mascotas
+        function navigateMascotas() {
+            document.getElementById('global-species').value = 'Mascota';
+            globalSpeciesFilter = 'Mascota';
+            navigate('mascotas');
+        }
+
+        function navigate(viewId) {
+            let actualViewId = viewId === 'mascotas' ? 'animales' : viewId;
+            currentView = viewId;
+            
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(actualViewId).classList.add('active');
+            
+            document.querySelectorAll('.nav-link').forEach(el => {
+                el.classList.remove('bg-green-800', 'border-green-400', 'text-yellow-300', 'border-transparent');
+                if(el.dataset.target === viewId) {
+                    el.classList.add('bg-green-800', 'border-green-400');
+                    if(viewId === 'reportes') el.classList.add('text-yellow-300');
+                } else {
+                    el.classList.add('border-transparent');
+                }
+            });
+
+            const titles = {
+                'dashboard': 'Panel Principal ERP', 'lotes': 'Lotes y Áreas', 
+                'animales': 'Mi Ganado', 'mascotas': 'Mis Mascotas', 'calendario': 'Agenda Operativa', 
+                'animal-detalle': 'Ficha Médica', 'inventario': 'Bodega e Inventario',
+                'maquinaria': 'Parque Vehicular y Equipos', 'maquina-detalle': 'Bitácora de Vehículo',
+                'reportes': 'Finanzas y Rentabilidad'
+            };
+            const vTitle = document.getElementById('view-title');
+            if(vTitle) vTitle.innerText = titles[viewId] || 'AgroTrack ERP';
+
+            if(window.innerWidth < 1024 && !document.getElementById('sidebar').classList.contains('-translate-x-full')) toggleSidebar();
+
+            if(actualViewId === 'dashboard') renderDashboard();
+            if(actualViewId === 'lotes') renderLotes();
+            if(actualViewId === 'animales') renderAnimales();
+            if(actualViewId === 'calendario') renderCalendario();
+            if(actualViewId === 'inventario') renderInventario();
+            if(actualViewId === 'maquinaria') renderMaquinaria();
+            if(actualViewId === 'reportes') renderReportes();
+            
+            lucide.createIcons();
+        }
+
+        function openModal(id, itemId = null) { 
+            document.getElementById(id).classList.remove('hidden'); 
+            if(id === 'modal-maquinaria' && itemId) fillMaquinaEditForm(itemId);
+            if(id === 'modal-animal' && globalSpeciesFilter === 'Mascota') document.getElementById('an-especie').value = 'Perro';
+        }
+        
+        function closeModal(id) { 
+            document.getElementById(id).classList.add('hidden');
+            const form = document.querySelector(`#${id} form`);
+            if(form) form.reset();
+        }
+
+        // ================= DATABASE (INDEXEDDB) VERSION 3 =================
+        const DB_NAME = 'GanaderiaOfflineDB';
+        const DB_VERSION = 3; 
+        let db;
+
+        const initDB = () => {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject("Error abriendo DB");
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains('lotes')) db.createObjectStore('lotes', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('animales')) {
+                        const s = db.createObjectStore('animales', { keyPath: 'id' });
+                        s.createIndex('loteId', 'loteId', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('eventos')) {
+                        const s = db.createObjectStore('eventos', { keyPath: 'id' });
+                        s.createIndex('animalId', 'animalId', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('inventario')) db.createObjectStore('inventario', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('maquinaria')) db.createObjectStore('maquinaria', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('mantenimientos')) {
+                        const s = db.createObjectStore('mantenimientos', { keyPath: 'id' });
+                        s.createIndex('maquinaId', 'maquinaId', { unique: false });
+                    }
+                };
+            });
+        };
+
+        const dbAdd = (storeName, data) => new Promise((res, rej) => {
+            const req = db.transaction([storeName], 'readwrite').objectStore(storeName).put(data);
+            req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error);
+        });
+        const dbGetAll = (storeName) => new Promise((res, rej) => {
+            const req = db.transaction([storeName], 'readonly').objectStore(storeName).getAll();
+            req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error);
+        });
+        const dbDelete = (storeName, id) => new Promise((res, rej) => {
+            const req = db.transaction([storeName], 'readwrite').objectStore(storeName).delete(id);
+            req.onsuccess = () => res(); req.onerror = () => rej(req.error);
+        });
+        const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+
+        // ================= IMPORT / EXPORT (.agr) =================
+        async function exportData() {
+            const data = { 
+                version: 3, date: new Date().toISOString(), 
+                lotes: await dbGetAll('lotes'), animales: await dbGetAll('animales'), 
+                eventos: await dbGetAll('eventos'), inventario: await dbGetAll('inventario'), 
+                maquinaria: await dbGetAll('maquinaria'), mantenimientos: await dbGetAll('mantenimientos') 
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+            a.download = `AgroTrackERP_Backup_${new Date().toISOString().split('T')[0]}.agr`; 
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        function triggerImport() { document.getElementById('import-file').click(); }
+        
+        function handleImport(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if(!data.animales) throw new Error("Estructura inválida");
+                    
+                    if(confirm("ATENCIÓN: Esto reemplazará todos tus datos actuales con los del archivo de respaldo. ¿Estás completamente seguro de continuar?")) {
+                        const stores = ['lotes', 'animales', 'eventos', 'inventario', 'maquinaria', 'mantenimientos'];
+                        
+                        // Clear existing
+                        for(let s of stores) {
+                            if(db.objectStoreNames.contains(s)) {
+                                await new Promise((res, rej) => {
+                                    const req = db.transaction([s], 'readwrite').objectStore(s).clear();
+                                    req.onsuccess = res; req.onerror = rej;
+                                });
+                            }
+                        }
+                        
+                        // Insert new
+                        for(let s of stores) {
+                            if(data[s] && data[s].length > 0) {
+                                for(let item of data[s]) {
+                                    await dbAdd(s, item);
+                                }
+                            }
+                        }
+                        
+                        alert("Datos restaurados correctamente. La aplicación se recargará.");
+                        window.location.reload();
+                    }
+                } catch(err) {
+                    alert("Error al leer el archivo. Asegúrate de seleccionar un archivo de respaldo válido (.agr o .json).");
+                }
+                e.target.value = ''; // Reset input
+            };
+            reader.readAsText(file);
+        }
+
+
+        // ================= MAQUINARIA Y VEHICULOS (Heredado de ERP) =================
+        async function saveMaquinaria(e) {
+            e.preventDefault();
+            const id = document.getElementById('maq-id').value || generateId();
+            await dbAdd('maquinaria', { id: id, nombre: document.getElementById('maq-nombre').value, tipo: document.getElementById('maq-tipo').value, marca: document.getElementById('maq-marca').value, placa: document.getElementById('maq-placa').value, ano: document.getElementById('maq-ano').value });
+            closeModal('modal-maquinaria');
+            if(currentView === 'maquina-detalle') verDetalleMaquina(id); else renderMaquinaria();
+        }
+
+        async function fillMaquinaEditForm(id) {
+            const m = (await dbGetAll('maquinaria')).find(x => x.id === id);
+            if(m) {
+                document.getElementById('maq-id').value = m.id; document.getElementById('maq-nombre').value = m.nombre; document.getElementById('maq-tipo').value = m.tipo; document.getElementById('maq-marca').value = m.marca || ''; document.getElementById('maq-placa').value = m.placa || ''; document.getElementById('maq-ano').value = m.ano || '';
+            }
+        }
+
+        async function renderMaquinaria() {
+            const maqs = await dbGetAll('maquinaria');
+            const mants = await dbGetAll('mantenimientos');
+            const container = document.getElementById('maquinaria-list');
+            container.innerHTML = '';
+            if(!maqs.length) { container.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">No hay maquinaria registrada.</div>`; return; }
+
+            maqs.forEach(m => {
+                const mc = mants.filter(x => x.maquinaId === m.id);
+                const costoTotal = mc.reduce((sum, item) => sum + (item.costoTotal || 0), 0);
+                let icon = m.tipo === 'Tractor' ? 'tractor' : (m.tipo === 'Generador' ? 'zap' : (m.tipo === 'Moto' ? 'bike' : 'truck'));
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md transition" onclick="verDetalleMaquina('${m.id}')">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2 border-b pb-2"><div class="bg-blue-50 text-blue-600 p-2 rounded-full"><i data-lucide="${icon}" class="w-5 h-5"></i></div><div><h4 class="font-bold text-lg">${m.nombre}</h4><p class="text-xs text-gray-500">${m.tipo} - ${m.marca || 'S/M'}</p></div></div>
+                            <p class="text-sm text-gray-600">Placa/Serie: <span class="font-medium">${m.placa || 'N/A'}</span></p>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center text-sm font-bold border-t pt-3"><span class="text-gray-500">${mc.length} Registros</span><span class="text-red-500">Gasto: $${costoTotal.toFixed(2)}</span></div>
+                    </div>`;
+            }); lucide.createIcons();
+        }
+
+        async function verDetalleMaquina(id) {
+            currentMaquinaId = id; const a = (await dbGetAll('maquinaria')).find(x => x.id === id); if(!a) return;
+            document.getElementById('det-maq-nombre').innerText = a.nombre;
+            document.getElementById('det-maq-sub').innerText = `${a.tipo} · ${a.marca||'S/M'} · Placa: ${a.placa||'N/A'} · Año: ${a.ano||'N/A'}`;
+            renderMantenimientos(); navigate('maquina-detalle');
+        }
+
+        function openMantenimientoModal() {
+            document.getElementById('mt-fecha').valueAsDate = new Date();
+            loadInventarioSelectsForMaquinaria(); openModal('modal-mantenimiento');
+        }
+
+        async function loadInventarioSelectsForMaquinaria() {
+            const valid = (await dbGetAll('inventario')).filter(i => i.categoria.includes('Combustible') || i.categoria.includes('Repuestos') || i.categoria.includes('Herramientas'));
+            document.getElementById('mt-producto').innerHTML = `<option value="">-- Gasto Externo o Servicio --</option>` + valid.map(i => `<option value="${i.id}">${i.nombre} ($${i.costo.toFixed(2)}) - Disp: ${i.stock}</option>`).join('');
+        }
+
+        async function saveMantenimiento(e) {
+            e.preventDefault();
+            const prodId = document.getElementById('mt-producto').value;
+            const cant = parseFloat(document.getElementById('mt-cantidad').value || 1);
+            let costoAdicional = parseFloat(document.getElementById('mt-costo-manual').value || 0);
+            let costoInsumo = 0;
+
+            if(prodId) {
+                const item = (await dbGetAll('inventario')).find(i => i.id === prodId);
+                if(item) { costoInsumo = item.costo * cant; item.stock -= cant; await dbAdd('inventario', item); }
+            }
+
+            await dbAdd('mantenimientos', { id: generateId(), maquinaId: currentMaquinaId, fecha: document.getElementById('mt-fecha').value, proxFecha: document.getElementById('mt-prox').value, tipo: document.getElementById('mt-tipo').value, productoId: prodId, cantidad: cant, costoTotal: costoInsumo + costoAdicional, km: document.getElementById('mt-km').value, detalles: document.getElementById('mt-detalles').value, timestamp: new Date().toISOString() });
+            closeModal('modal-mantenimiento'); renderMantenimientos(); renderInventario();
+        }
+
+        async function renderMantenimientos() {
+            if(!currentMaquinaId) return;
+            const mants = (await dbGetAll('mantenimientos')).filter(e => e.maquinaId === currentMaquinaId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            const inv = await dbGetAll('inventario'); let totalInversion = 0;
+
+            document.getElementById('list-mantenimientos').innerHTML = mants.map(ev => {
+                totalInversion += (ev.costoTotal || 0); const p = inv.find(i => i.id === ev.productoId);
+                return `<li class="relative pl-6"><span class="absolute -left-[5px] top-2 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></span><div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm"><div class="flex justify-between font-bold text-gray-800 mb-1"><span>${ev.tipo} ${p ? `(${p.nombre})` : ''}</span><span class="text-gray-400 font-normal text-xs">${new Date(ev.fecha).toLocaleDateString()}</span></div><p class="text-gray-600 text-sm">${ev.detalles || 'Sin observaciones'} ${ev.km ? `(KM: ${ev.km})` : ''}</p><div class="flex justify-between items-center mt-2"><span class="text-red-600 font-bold text-sm">Costo: $${ev.costoTotal.toFixed(2)}</span>${ev.proxFecha ? `<span class="text-orange-500 text-xs font-bold"><i data-lucide="bell" class="inline w-3 h-3"></i> Próx: ${new Date(ev.proxFecha).toLocaleDateString()}</span>` : ''}</div><button onclick="borrarMantenimiento('${ev.id}')" class="text-gray-300 hover:text-red-500 text-xs mt-1 transition">Eliminar</button></div></li>`;
+            }).join('') || '<p class="text-gray-500">Sin historial registrado.</p>';
+            document.getElementById('det-maq-costo').innerText = `$${totalInversion.toFixed(2)}`; lucide.createIcons();
+        }
+
+        async function borrarMantenimiento(id) { if(confirm('¿Eliminar?')){ await dbDelete('mantenimientos', id); renderMantenimientos(); } }
+
+        // ================= REPORTES Y FINANZAS =================
+        async function renderReportes() {
+            let animales = await dbGetAll('animales');
+            let eventos = await dbGetAll('eventos');
+            const mants = await dbGetAll('mantenimientos');
+
+            if(globalSpeciesFilter === "Mascota") {
+                animales = animales.filter(a => isPet(a.especie));
+                const validIds = new Set(animales.map(a => a.id));
+                eventos = eventos.filter(e => validIds.has(e.animalId));
+            } else if (globalSpeciesFilter) {
+                animales = animales.filter(a => a.especie === globalSpeciesFilter);
+                const validIds = new Set(animales.map(a => a.id));
+                eventos = eventos.filter(e => validIds.has(e.animalId));
+            }
+
+            let costoSalud = 0, costoAlimento = 0, costoMaquinaria = 0;
+            eventos.forEach(e => { if(e.costo > 0) { if(e.categoria.includes('Salud') || e.categoria.includes('Reproducción')) costoSalud += e.costo; else costoAlimento += e.costo; } });
+            mants.forEach(m => { costoMaquinaria += (m.costoTotal || 0); });
+
+            document.getElementById('rep-gasto-total').innerText = `$${(costoSalud + costoAlimento + costoMaquinaria).toFixed(2)}`;
+
+            if(chartCats) chartCats.destroy(); if(chartMensual) chartMensual.destroy();
+
+            const ctxCat = document.getElementById('chartCategorias').getContext('2d');
+            chartCats = new Chart(ctxCat, { type: 'doughnut', data: { labels: ['Salud/Manejo', 'Alimentación', 'Maquinaria'], datasets: [{ data: [costoSalud, costoAlimento, costoMaquinaria], backgroundColor: ['#10B981', '#F59E0B', '#3B82F6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false } });
+
+            const meses = {}; const formatMonth = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}`;
+            for(let i=5; i>=0; i--){ const d = new Date(); d.setMonth(d.getMonth() - i); meses[formatMonth(d)] = { animal: 0, maquina: 0 }; }
+            eventos.forEach(e => { const fm = formatMonth(new Date(e.fecha)); if(meses[fm]) meses[fm].animal += (e.costo || 0); });
+            mants.forEach(m => { const fm = formatMonth(new Date(m.fecha)); if(meses[fm]) meses[fm].maquina += (m.costoTotal || 0); });
+
+            const ctxMes = document.getElementById('chartMensual').getContext('2d');
+            chartMensual = new Chart(ctxMes, { type: 'bar', data: { labels: Object.keys(meses).map(m => new Date(m.split('-')[0], parseInt(m.split('-')[1])-1).toLocaleString('es-ES', { month: 'short' })), datasets: [ { label: 'Gastos Biológicos', data: Object.values(meses).map(v => v.animal), backgroundColor: '#10B981' }, { label: 'Gastos Maquinaria', data: Object.values(meses).map(v => v.maquina), backgroundColor: '#3B82F6' } ] }, options: { responsive: true, maintainAspectRatio: false } });
+        }
+
+
+        // ================= INVENTARIO, LOTES Y DASHBOARD =================
+        async function saveInventario(e) {
+            e.preventDefault();
+            await dbAdd('inventario', { id: document.getElementById('inv-id').value || generateId(), nombre: document.getElementById('inv-nombre').value, categoria: document.getElementById('inv-categoria').value, costo: parseFloat(document.getElementById('inv-costo').value || 0), stock: parseFloat(document.getElementById('inv-stock').value || 0), unidad: document.getElementById('inv-unidad').value }); 
+            closeModal('modal-inventario'); renderInventario(); loadInventarioSelects();
+        }
+
+        async function renderInventario() {
+            const items = await dbGetAll('inventario'); const tbody = document.getElementById('inventario-list'); tbody.innerHTML = '';
+            if(!items.length) { tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500">No hay productos.</td></tr>`; return; }
+            items.forEach(i => {
+                tbody.innerHTML += `<tr class="hover:bg-gray-50 border-b"><td class="py-3 px-4 font-medium text-blue-900">${i.nombre}</td><td class="py-3 px-4 text-xs">${i.categoria}</td><td class="py-3 px-4 ${i.stock<=5?'text-red-600 font-bold':''}">${i.stock} <span class="text-xs text-gray-500">${i.unidad}</span></td><td class="py-3 px-4">$${i.costo.toFixed(2)}</td><td class="py-3 px-4 text-center"><button onclick="borrarProducto('${i.id}')" class="text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`;
+            }); lucide.createIcons();
+        }
+
+        async function borrarProducto(id) { if(confirm("¿Eliminar? Eventos pasados conservan su costo.")){ await dbDelete('inventario', id); renderInventario(); loadInventarioSelects(); } }
+
+        async function loadInventarioSelects() {
+            const options = `<option value="">-- Ninguno / Registro Manual --</option>` + (await dbGetAll('inventario')).map(i => `<option value="${i.id}">${i.nombre} ($${i.costo.toFixed(2)}) - ${i.stock}</option>`).join('');
+            if(document.getElementById('ev-producto')) document.getElementById('ev-producto').innerHTML = options;
+            if(document.getElementById('ev-mas-producto')) document.getElementById('ev-mas-producto').innerHTML = options;
+        }
+
+        async function renderDashboard() {
+            let animales = await dbGetAll('animales');
+            let eventos = await dbGetAll('eventos');
+            const mants = await dbGetAll('mantenimientos');
+            
+            if(globalSpeciesFilter === "Mascota") {
+                animales = animales.filter(a => isPet(a.especie));
+                const validIds = new Set(animales.map(a => a.id));
+                eventos = eventos.filter(e => validIds.has(e.animalId));
+            } else if (globalSpeciesFilter) {
+                animales = animales.filter(a => a.especie === globalSpeciesFilter);
+                const validIds = new Set(animales.map(a => a.id));
+                eventos = eventos.filter(e => validIds.has(e.animalId));
+            }
+
+            document.getElementById('stat-total').innerText = animales.length;
+            document.getElementById('stat-lotes').innerText = new Set(animales.map(a => a.loteId).filter(Boolean)).size;
+            document.getElementById('stat-maquinas').innerText = (await dbGetAll('maquinaria')).length;
+            
+            const hoy = new Date(); const proxS = new Date(); proxS.setDate(hoy.getDate() + 7);
+            document.getElementById('stat-eventos').innerText = eventos.filter(e => e.proxFecha && new Date(e.proxFecha) >= hoy && new Date(e.proxFecha) <= proxS).length + mants.filter(e => e.proxFecha && new Date(e.proxFecha) >= hoy && new Date(e.proxFecha) <= proxS).length;
+
+            const tLotes = document.getElementById('dash-lotes-list'); tLotes.innerHTML = '';
+            (await dbGetAll('lotes')).forEach(l => {
+                const count = animales.filter(a => a.loteId === l.id).length;
+                if(count > 0 || globalSpeciesFilter === "") tLotes.innerHTML += `<tr><td class="py-2 font-medium">${l.nombre}</td><td class="py-2"><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">${count}</span></td><td class="py-2 text-xs text-gray-500 truncate max-w-[100px]">${l.desc||'Varios'}</td></tr>`;
+            });
+
+            document.getElementById('dash-razas-list').innerHTML = Object.entries(animales.reduce((acc, a) => { const k = `${a.especie} ${a.raza?`(${a.raza})`:''}`; acc[k] = (acc[k]||0)+1; return acc; }, {})).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([r, c]) => `<li class="flex justify-between text-sm border-b pb-1"><span class="font-medium">${r}</span> <span class="bg-blue-50 text-blue-700 font-bold px-2 rounded text-xs">${c}</span></li>`).join('');
+            lucide.createIcons();
+        }
+
+        async function renderCalendario() {
+            let eventos = await dbGetAll('eventos'); let animales = await dbGetAll('animales'); let maqs = await dbGetAll('maquinaria');
+            
+            if(globalSpeciesFilter === "Mascota") {
+                const validIds = new Set(animales.filter(a => isPet(a.especie)).map(a => a.id));
+                eventos = eventos.filter(e => validIds.has(e.animalId));
+            } else if (globalSpeciesFilter) {
+                const validIds = new Set(animales.filter(a => a.especie === globalSpeciesFilter).map(a => a.id));
+                eventos = eventos.filter(e => validIds.has(e.animalId));
+            }
+
+            let tareas = [];
+            eventos.forEach(e => { if(e.proxFecha) tareas.push({ ...e, source: 'animal' }); });
+            (await dbGetAll('mantenimientos')).forEach(m => { if(m.proxFecha) tareas.push({ ...m, source: 'maquina' }); });
+            tareas.sort((a,b) => new Date(a.proxFecha) - new Date(b.proxFecha));
+
+            const tbody = document.getElementById('tareas-list'); tbody.innerHTML = '';
+            if(!tareas.length) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-500">Calendario libre.</td></tr>`; return; }
+
+            tareas.forEach(ev => {
+                const isOverdue = new Date(ev.proxFecha) < new Date(new Date().toDateString());
+                let targetName = 'Desconocido', targetIcon = '';
+                if(ev.source === 'animal') { const an = animales.find(a => a.id === ev.animalId); targetName = an ? `${an.arete}` : 'Borrado'; targetIcon = an && isPet(an.especie) ? 'dog' : 'paw-print'; } 
+                else { const mq = maqs.find(m => m.id === ev.maquinaId); targetName = mq ? `${mq.nombre}` : 'Borrado'; targetIcon = 'truck'; }
+                const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`AgroTrack: ${ev.tipo} - ${targetName}`)}&dates=${new Date(ev.proxFecha).toISOString().split('T')[0].replace(/-/g, '')}/${new Date(ev.proxFecha).toISOString().split('T')[0].replace(/-/g, '')}`;
+                tbody.innerHTML += `<tr class="hover:bg-gray-50 border-b"><td class="py-3 px-4 ${isOverdue?'text-red-600 font-bold bg-red-50':'font-medium'}">${new Date(ev.proxFecha).toLocaleDateString()}</td><td class="py-3 px-4 font-bold text-gray-700 flex items-center gap-2"><i data-lucide="${targetIcon}" class="w-4 h-4 text-gray-400"></i> ${targetName}</td><td class="py-3 px-4">${ev.tipo} <span class="block text-xs text-gray-500">${ev.detalles||''}</span></td><td class="py-3 px-4 text-center"><a href="${url}" target="_blank" class="bg-white border text-gray-600 py-1 px-2 rounded shadow-sm inline-block"><i data-lucide="calendar-plus" class="w-3 h-3"></i></a></td></tr>`;
+            }); lucide.createIcons();
+        }
+
+        // ================= ANIMALES Y MASCOTAS =================
+        async function saveLote(e) { e.preventDefault(); await dbAdd('lotes', { id: generateId(), nombre: document.getElementById('lote-nombre').value, desc: document.getElementById('lote-desc').value }); closeModal('modal-lote'); renderLotes(); }
+        async function renderLotes() { const lotes = await dbGetAll('lotes'); let animales = await dbGetAll('animales'); if(globalSpeciesFilter==="Mascota") animales = animales.filter(a => isPet(a.especie)); else if(globalSpeciesFilter) animales = animales.filter(a => a.especie === globalSpeciesFilter); const container = document.getElementById('lotes-list'); container.innerHTML = ''; lotes.forEach(l => { const count = animales.filter(a => a.loteId === l.id).length; if(count>0||!globalSpeciesFilter) container.innerHTML += `<div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm"><h4 class="font-bold text-lg">${l.nombre} (${count})</h4><p class="text-sm text-gray-500 mb-4 h-8 overflow-hidden">${l.desc||''}</p><button onclick="document.getElementById('mas-lote-id').value='${l.id}'; openModal('modal-masivo')" class="text-sm text-blue-600 mr-3">Generar</button><button onclick="document.getElementById('ev-mas-lote-id').value='${l.id}'; openModal('modal-evento-masivo')" class="text-sm text-green-600 mr-3">Tratar</button><button onclick="borrarLote('${l.id}')" class="text-sm text-red-500">Borrar</button></div>`;}); }
+        async function borrarLote(id) { await dbDelete('lotes', id); renderLotes(); }
+        async function generarMasivo(e) { e.preventDefault(); const lid=document.getElementById('mas-lote-id').value, pre=document.getElementById('mas-prefijo').value, s=parseInt(document.getElementById('mas-inicio').value), en=parseInt(document.getElementById('mas-fin').value); for(let i=s;i<=en;i++) await dbAdd('animales',{id:generateId(),arete:`${pre}${i}`,especie:document.getElementById('mas-especie').value,loteId:lid,estado:document.getElementById('mas-estado').value, sexo:document.getElementById('mas-sexo').value, raza:document.getElementById('mas-raza').value}); closeModal('modal-masivo'); renderLotes(); }
+        async function saveEventoMasivo(e) { e.preventDefault(); const lid=document.getElementById('ev-mas-lote-id').value, t=document.getElementById('ev-mas-tipo').value, d=parseFloat(document.getElementById('ev-mas-dosis').value); const an = (await dbGetAll('animales')).filter(x=>x.loteId===lid); for(let a of an) await dbAdd('eventos',{id:generateId(), animalId:a.id, categoria:'Salud', tipo:t, valor:d, fecha:document.getElementById('ev-mas-fecha').value, timestamp: new Date().toISOString()}); closeModal('modal-evento-masivo'); alert("Lote tratado!"); }
+        
+        async function saveAnimal(e) { e.preventDefault(); const id = document.getElementById('animal-id').value || generateId(); await dbAdd('animales', { id, arete: document.getElementById('an-arete').value, nombre: document.getElementById('an-nombre').value, especie: document.getElementById('an-especie').value, raza: document.getElementById('an-raza').value, sexo: document.getElementById('an-sexo').value, proposito: document.getElementById('an-proposito').value, estado: document.getElementById('an-estado').value, loteId: document.getElementById('an-lote').value, madre: document.getElementById('an-madre').value, padre: document.getElementById('an-padre').value }); closeModal('modal-animal'); if(currentView === 'animal-detalle') verDetalleAnimal(id); else renderAnimales(); }
+        
+        async function renderAnimales() { 
+            let an = await dbGetAll('animales'); 
+            const lotes = await dbGetAll('lotes');
+            const search = document.getElementById('search-animal').value.toLowerCase(); 
+            
+            if(globalSpeciesFilter === "Mascota") an = an.filter(a => isPet(a.especie));
+            else if(globalSpeciesFilter) an = an.filter(a => a.especie === globalSpeciesFilter); 
+            
+            const tb = document.getElementById('animales-list'); tb.innerHTML=''; 
+            an.filter(a=>(a.arete.toLowerCase().includes(search) || (a.nombre||'').toLowerCase().includes(search))).slice(0,200).forEach(a => { 
+                const lName = lotes.find(l => l.id === a.loteId)?.nombre || 'Sin Zona';
+                tb.innerHTML+=`<tr class="cursor-pointer hover:bg-gray-50 border-b" onclick="verDetalleAnimal('${a.id}')"><td class="p-3 font-bold">${a.arete} <span class="font-normal text-xs block text-gray-500">${a.nombre||''}</span></td><td class="p-3 text-xs text-gray-500">M:${a.madre||'-'}<br>P:${a.padre||'-'}</td><td class="p-3 text-xs">${a.especie} - ${a.raza||'S/R'}</td><td class="p-3 text-xs">${lName}</td><td class="p-3"><span class="px-2 border rounded text-xs font-bold">${a.estado}</span></td><td class="p-3 text-center"><button class="text-green-600"><i data-lucide="folder-open" class="w-5 h-5"></i></button></td></tr>`; 
+            }); 
+            
+            const sel = document.getElementById('an-lote');
+            if(sel) sel.innerHTML = '<option value="">Sin Lote/Zona</option>' + lotes.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
+            lucide.createIcons();
+        }
+        
+        async function verDetalleAnimal(id) { 
+            currentAnimalId = id; const a = (await dbGetAll('animales')).find(x=>x.id===id); 
+            document.getElementById('det-identificador').innerText=a.arete + (a.nombre ? ` (${a.nombre})` : ''); 
+            document.getElementById('det-sub').innerText=a.especie; 
+            document.getElementById('det-estado-badge').innerText=a.estado; 
+            document.getElementById('animal-id').value=a.id; document.getElementById('an-arete').value=a.arete; 
+            
+            document.getElementById('det-icon').setAttribute('data-lucide', isPet(a.especie) ? 'dog' : 'paw-print');
+            
+            renderEventosAnimal(); navigate('animal-detalle'); 
+        }
+        
+        function openEditAnimalModal() { openModal('modal-animal'); }
+        function openEventModal(cat) { document.getElementById('ev-categoria').value=cat; document.getElementById('ev-fecha').valueAsDate=new Date(); const ts=document.getElementById('ev-tipo'); ts.innerHTML=cat==='Salud'?`<option value="Vacuna">Vacuna</option><option value="Desparasitante">Desparasitante</option>`:(cat==='Reproducción'?`<option value="Monta">Monta/Cruce</option><option value="Parto">Parto</option>`:`<option value="Pesaje">Pesaje</option>`); openModal('modal-evento'); loadInventarioSelects(); }
+        async function saveEvento(e) { e.preventDefault(); const prodId = document.getElementById('ev-producto').value; const dosis = parseFloat(document.getElementById('ev-valor').value||1); let costo = 0; if(prodId){ const item = (await dbGetAll('inventario')).find(i=>i.id===prodId); if(item){ costo=item.costo*dosis; item.stock-=dosis; await dbAdd('inventario', item); } } await dbAdd('eventos', { id:generateId(), animalId:currentAnimalId, categoria:document.getElementById('ev-categoria').value, fecha:document.getElementById('ev-fecha').value, proxFecha: document.getElementById('ev-prox-fecha').value, tipo:document.getElementById('ev-tipo').value, valor:dosis, productoId:prodId, costo:costo, detalles:document.getElementById('ev-detalles').value, timestamp: new Date().toISOString() }); closeModal('modal-evento'); renderEventosAnimal(); }
+        async function renderEventosAnimal() { let ev = (await dbGetAll('eventos')).filter(e=>e.animalId===currentAnimalId).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); let inv = await dbGetAll('inventario'); let total=0; document.getElementById('list-historial').innerHTML=ev.map(e=>{ total+=(e.costo||0); const p = inv.find(i=>i.id===e.productoId); return `<li class="relative pl-6"><span class="absolute -left-[5px] top-2 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></span><div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm"><div class="flex justify-between font-bold"><span>${e.tipo} ${p?`(${p.nombre})`:''}</span><span class="text-gray-400 text-xs">${e.fecha}</span></div><p class="text-sm text-gray-600">${e.detalles||''}</p><p class="text-xs text-red-600 mt-1">Costo: $${(e.costo||0).toFixed(2)}</p></div></li>`; }).join(''); document.getElementById('det-costo-total').innerText = `$${total.toFixed(2)}`; }
+
+        // ================= INIT =================
+        window.onload = async () => {
+            try { await initDB(); loadInventarioSelects(); navigate('dashboard'); }
+            catch (err) { alert("Error: Tu navegador no soporta IndexedDB local."); }
+        };
+    </script>
+</body>
+</html>
